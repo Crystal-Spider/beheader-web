@@ -86,7 +86,7 @@
           @if (job().busy) {
             <div aria-live="polite" role="status">
               <p>{{ t('stage.' + (job().progress?.stage || 'plan')) }}</p>
-              <mat-progress-bar [mode]="job().progress?.total ? 'determinate' : 'indeterminate'" [value]="100 * (job().progress?.completed || 0) / (job().progress?.total || 1)" />
+              <mat-progress-bar [attr.aria-label]="t('stage.' + (job().progress?.stage || 'plan'))" [mode]="job().progress?.total ? 'determinate' : 'indeterminate'" [value]="100 * (job().progress?.completed || 0) / (job().progress?.total || 1)" />
               <p>{{ progressLabel() }}</p>
             </div>
             <bhw-button appearance="outlined" [label]="t('ui.cancel')" (clicked)="cancel()" />

@@ -1,6 +1,6 @@
 <ng-container *transloco="let t">
   <p class="visually-hidden" id="reorder-hint">{{ t('ui.reorderHint') }}</p>
-  <div cdkDropList cdkDropListOrientation="vertical" class="selected-files" [attr.aria-label]="t('ui.selected')" [cdkDropListData]="inputs()" [cdkDropListDisabled]="disabled()" (cdkDropListDropped)="drop($event)">
+  <div cdkDropList cdkDropListOrientation="vertical" class="selected-files" role="group" [attr.aria-label]="t('ui.selected')" [cdkDropListData]="inputs()" [cdkDropListDisabled]="disabled()" (cdkDropListDropped)="drop($event)">
     @for (input of inputs(); track input.id; let index = $index) {
       <article cdkDrag cdkDragLockAxis="y" class="selected-file" [attr.aria-label]="input.name" [attr.data-file-id]="input.id" [cdkDragDisabled]="disabled()" [cdkDragStartDelay]="{mouse: 0, touch: 150}">
         <bhw-icon-button cdkDragHandle class="drag-handle" description="reorder-hint" icon="drag" [cdkDragHandleDisabled]="disabled() || inputs().length < 2" [disabled]="disabled() || inputs().length < 2" [label]="t('ui.reorder')" (keydown.arrowdown)="keyboard($event, index, 1)" (keydown.arrowup)="keyboard($event, index, -1)" />

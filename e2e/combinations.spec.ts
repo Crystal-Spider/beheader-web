@@ -2,6 +2,8 @@ import {mkdirSync, readFileSync, readdirSync, writeFileSync} from 'node:fs';
 import {buildSync} from 'esbuild';
 import {expect, test} from '@playwright/test';
 
+import {evidenceDirectory} from './evidence';
+
 const harness = buildSync({entryPoints: ['e2e/processing-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwHarness', platform: 'browser'}).outputFiles[0]!.text;
 const families = ['image', 'media', 'html', 'pdf', 'archive'] as const;
 const fixtures = {'image': 'transparent.png', 'media': 'video-aac.mp4', 'pdf': 'classic.pdf', 'archive': 'first.zip'};
@@ -14,7 +16,7 @@ test.beforeEach(async({page}) => {
 for (let mask = 1; mask < 32; mask++) {
   const selected = families.filter((_, index) => mask & (1 << index));
   if (selected.length < 2) { continue; }
-  test(`validates the ${selected.join(' + ')} combination`, async({page, browser}) => {
+  test(`validates the ${selected.join(' + ')} combination`, async({page, browser, browserName}) => {
     const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const inputs = selected.map(family => ({id: family, name: family === 'html' ? 'page.html' : fixtures[family], bytes: family === 'html'
       ? Array.from(new TextEncoder().encode('<!doctype html><html><head><meta charset="utf-8"><title>Città 🙂</title></head><body><h1 id="fixture">Città, 日本語, 🙂</h1><script>parent.postMessage({fixture:document.getElementById("fixture").textContent,charset:document.characterSet},"*")</script></body></html>'))
@@ -83,9 +85,10 @@ for (let mask = 1; mask < 32; mask++) {
       } finally { await cleanupJob(generated.artifact.jobId); }
     }, {inputs, workerFile, selected});
     expect(result.families).toEqual(selected);
-    mkdirSync('test-results/combinations', {recursive: true});
-    writeFileSync(`test-results/combinations/${selected.join('-')}.polyglot`, new Uint8Array(result.bytes));
-    writeFileSync('test-results/combination-browser.json', JSON.stringify({engine: 'Chromium', version: browser.version(), platform: process.platform}));
+    const directory = evidenceDirectory(browserName);
+    mkdirSync(`${directory}/combinations`, {recursive: true});
+    writeFileSync(`${directory}/combinations/${selected.join('-')}.polyglot`, new Uint8Array(result.bytes));
+    writeFileSync(`${directory}/combination-browser.json`, JSON.stringify({engine: browserName, version: browser.version(), platform: process.platform}));
   });
 }
 
@@ -119,7 +122,7 @@ for (const [name, expected] of [
 }
 
 for (const reverse of [false, true]) {
-  test(`merges multiple archives in ${reverse ? 'reversed' : 'selected'} order with classic PDF subsections`, async({page}) => {
+  test(`merges multiple archives in ${reverse ? 'reversed' : 'selected'} order with classic PDF subsections`, async({page, browserName}) => {
     const names = reverse ? ['second.zip', 'first.zip'] : ['first.zip', 'second.zip'];
     const files = ['subsections.pdf', ...names].map(name => ({name, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))}));
     const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
@@ -138,8 +141,9 @@ for (const reverse of [false, true]) {
       collisions: [{path: 'shared.txt', earlierInputId: names[0], laterInputId: names[1]}],
       diagnostics: [{code: 'ARCHIVE_COLLISION', severity: 'warning', details: {count: 1}}]
     }});
-    mkdirSync('test-results/archive-order', {recursive: true});
-    writeFileSync(`test-results/archive-order/${reverse ? 'reversed' : 'selected'}.polyglot`, new Uint8Array(result.bytes));
+    const directory = evidenceDirectory(browserName);
+    mkdirSync(`${directory}/archive-order`, {recursive: true});
+    writeFileSync(`${directory}/archive-order/${reverse ? 'reversed' : 'selected'}.polyglot`, new Uint8Array(result.bytes));
   });
 }
 

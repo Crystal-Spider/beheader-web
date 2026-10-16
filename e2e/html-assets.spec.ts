@@ -3,9 +3,11 @@ import {buildSync} from 'esbuild';
 import {ZipWriter, Uint8ArrayReader, Uint8ArrayWriter} from '@zip.js/zip.js';
 import {expect, test} from '@playwright/test';
 
+import {evidenceDirectory} from './evidence';
+
 const harness = buildSync({entryPoints: ['e2e/processing-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwHarness', platform: 'browser'}).outputFiles[0]!.text;
 
-test('bundles nested assets offline and retains all interpretations with ordered advanced payloads', async({page, context}) => {
+test('bundles nested assets offline and retains all interpretations with ordered advanced payloads', async({page, context, browserName}) => {
   const zip = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
   for (const [name, bytes] of [
     ['site/css/main.css', new TextEncoder().encode('@import "nested.css" screen;h1{background-image:url(../image.png)}')],
@@ -37,8 +39,9 @@ test('bundles nested assets offline and retains all interpretations with ordered
   const text = new TextDecoder().decode(bytes);
   expect(text).toContain('HEADER-PAYLOAD');
   expect(text).toContain('FIRST-APPENDABLESECOND-APPENDABLE');
-  mkdirSync('test-results/advanced', {recursive: true});
-  writeFileSync('test-results/advanced/all.polyglot', bytes);
+  const directory = evidenceDirectory(browserName);
+  mkdirSync(`${directory}/advanced`, {recursive: true});
+  writeFileSync(`${directory}/advanced/all.polyglot`, bytes);
   await context.setOffline(true);
   await page.evaluate(async bytes => {
     const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], {type: 'text/html'}));

@@ -9,11 +9,8 @@
     "privacy": "I tuoi file restano sul tuo dispositivo"
   },
   "generator": {
-    "status": "In sviluppo",
-    "notice": "Il generatore sta prendendo forma. La selezione dei file e la generazione non sono ancora disponibili.",
     "filesTitle": "I tuoi file",
     "emptyTitle": "Una nuova casa per i tuoi file",
-    "emptyDescription": "Presto potrai riunire immagini, media, pagine, documenti e archivi.",
     "choose": "Scegli file",
     "formatsLabel": "Tipi di file disponibili",
     "image": "Immagine",
@@ -55,8 +52,6 @@
     "role": "Ruolo",
     "replace": "Sostituisci",
     "remove": "Rimuovi",
-    "up": "Sposta su",
-    "down": "Sposta giù",
     "htmlPath": "Percorso HTML nello ZIP delle risorse",
     "references": "Alcuni riferimenti non sono stati incorporati. Sostituisci le risorse o scegli esplicitamente di mantenere questi riferimenti.",
     "allowReferences": "Continua mantenendo i riferimenti non risolti",

@@ -2,7 +2,7 @@
 
 Beheader Web is an independent browser port inspired by [Beheader](https://github.com/p2r3/beheader), created by [p2r3](https://github.com/p2r3). It is not affiliated with or endorsed by upstream.
 
-The project is distributed under GPL version 3; the full license is in `LICENSE`. Retain upstream attribution and any source-specific notices as processing code is ported in subsequent milestones.
+The project is distributed under GPL version 3; the full license is in `LICENSE`. Retain upstream attribution and source-specific notices when redistributing the application or derived code.
 
 The ICO/MP4 container layout, baseline HTML wrapping, and classic PDF relocation approach in `src/lib/polyglot/logic/generate.ts` and `src/lib/polyglot/format/pdf.ts` are adapted from Beheader's `beheader.js`, by p2r3, under GPL-3.0. The browser I/O, format validation, bounded relocation, and seekable ZIP pipeline are part of this port. Upstream's license remains included in `LICENSE`.
 
@@ -15,3 +15,5 @@ Material Design SVG icons are distributed by the `@material-design-icons/svg` pa
 The monochrome GitHub, Patreon, and Ko-fi SVG marks come from [Simple Icons](https://github.com/simple-icons/simple-icons), distributed under CC0-1.0; the license is retained in `public/assets/license/SIMPLE-ICONS-CC0.txt`. Brand marks remain the property of their respective owners.
 
 Link-state styling and vertical handle/placeholder drag patterns follow [Game of Life: Tribes](https://github.com/rChimisso/game-of-life-tribes) at commit `6dc4d34e8234791c8cb7c7e7e43a17733535ca4e`. The reference's MIT license is retained in `public/assets/license/GOLT-MIT.txt`; the implementation uses this project's signal APIs, runtime ownership, theme, and accessibility behavior.
+
+The complete project license and attribution also ship as `assets/license/GPL-3.0.txt` and `assets/license/BEHEADER-NOTICES.txt`, and are retained with the static dependency license texts in the offline application cache. Angular’s collected `3rdpartylicenses.txt` is also included at the distribution root.

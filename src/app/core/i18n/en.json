@@ -9,11 +9,8 @@
     "privacy": "Your files stay on your device"
   },
   "generator": {
-    "status": "In development",
-    "notice": "The generator is taking shape. File selection and generation are not available yet.",
     "filesTitle": "Your files",
     "emptyTitle": "A new home for your files",
-    "emptyDescription": "Soon, bring together images, media, pages, documents, and archives.",
     "choose": "Choose files",
     "formatsLabel": "Available input types",
     "image": "Image",
@@ -55,8 +52,6 @@
     "role": "Role",
     "replace": "Replace",
     "remove": "Remove",
-    "up": "Move up",
-    "down": "Move down",
     "htmlPath": "HTML entry path inside the asset ZIP",
     "references": "Some references could not be bundled. Replace the assets, or explicitly keep these references unchanged.",
     "allowReferences": "Continue with unresolved references unchanged",

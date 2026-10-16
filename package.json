@@ -25,13 +25,14 @@
     "watch": "ng build --watch --configuration development",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "ngc --project tsconfig.app.json --noEmit && tsc --project tsconfig.tools.json --noEmit && tsc --project tsconfig.worker.json --noEmit",
-    "test": "vitest run --passWithNoTests && playwright test && playwright test --config playwright.audio.config.ts",
+    "test": "vitest run --passWithNoTests && playwright test && playwright test --config playwright.acceptance.config.ts && playwright test --config playwright.audio.config.ts",
     "test:unit": "vitest run --passWithNoTests",
     "test:watch": "vitest --passWithNoTests",
     "test:e2e": "playwright test",
     "test:audio": "playwright test --config playwright.audio.config.ts",
     "preview": "node scripts/preview.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test:acceptance": "playwright test --config playwright.acceptance.config.ts"
   },
   "dependencies": {
     "@angular/cdk": "22.2.3",
@@ -58,6 +59,7 @@
     "@angular/build": "22.2.3",
     "@angular/cli": "22.2.3",
     "@angular/compiler-cli": "22.2.3",
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@material-design-icons/svg": "0.14.15",
     "@playwright/test": "1.64.1",

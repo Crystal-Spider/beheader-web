@@ -1,8 +1,10 @@
-import {closeSync, createReadStream, openSync, readFileSync, readSync, statSync, writeFileSync} from 'node:fs';
+import {closeSync, createReadStream, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {buildSync} from 'esbuild';
 import {expect, test} from '@playwright/test';
+
+import {evidenceDirectory} from './evidence';
 
 const worker = buildSync({entryPoints: ['e2e/large-job.worker.ts'], bundle: true, write: false, format: 'iife', platform: 'browser'}).outputFiles[0]!.text;
 const harness = buildSync({entryPoints: ['e2e/processing-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwHarness', platform: 'browser'}).outputFiles[0]!.text;
@@ -17,7 +19,7 @@ interface LargeResult {
 /** Cancellation evidence from the isolated synthetic-source worker. */
 interface CancelResult {diagnostic: {code: string}; jobId: string; maxRead: number}
 
-test('generates and downloads an actual output above 512 MiB through bounded file-backed I/O', async({page}) => {
+test('generates and downloads an actual output above 512 MiB through bounded file-backed I/O', async({page, browser, browserName}) => {
   test.setTimeout(180000);
   await page.goto('./'); await page.addScriptTag({content: harness});
   const download = page.waitForEvent('download');
@@ -50,7 +52,9 @@ test('generates and downloads an actual output above 512 MiB through bounded fil
   const expected = createHash('sha256'); const bytes = Buffer.alloc(1024 ** 2, 65);
   for (let index = 0; index < 512; index++) { expected.update(bytes); } expected.update(Buffer.from([65]));
   const hash = actual.digest('hex'); expect(hash).toBe(expected.digest('hex'));
-  writeFileSync('test-results/large-validation.json', JSON.stringify({size: result.artifact.size, maxRead: result.maxRead, payloadBytes: 512 * 1024 ** 2 + 1, payloadSha256: hash, pdfPages: 1}, null, 2));
+  const directory = evidenceDirectory(browserName);
+  mkdirSync(directory, {recursive: true});
+  writeFileSync(`${directory}/large-validation.json`, JSON.stringify({engine: browserName, version: browser.version(), size: result.artifact.size, maxRead: result.maxRead, payloadBytes: 512 * 1024 ** 2 + 1, payloadSha256: hash, pdfPages: 1}, null, 2));
   await page.evaluate(async artifact => window.bhwHarness.cleanupJob(artifact.jobId), result.artifact);
 });
 

@@ -4,10 +4,12 @@ import json
 import struct
 import subprocess
 import warnings
+import os
 from pathlib import Path
 from PIL import Image, __version__ as pillow_version
 
 root = Path(__file__).resolve().parent.parent
+results = Path(os.environ.get("BHW_VALIDATION_ROOT", root / "test-results"))
 
 
 def payload_hashes(path):
@@ -49,7 +51,7 @@ def probe(path):
     return json.loads(result.stdout)
 
 
-outputs = sorted((root / "test-results").glob("*.polyglot"))
+outputs = sorted(results.glob("*.polyglot"))
 assert len(outputs) == 7, f"Run the complete Playwright suite first; found {len(outputs)} outputs"
 report = {"pillow": pillow_version, "outputs": []}
 for path in outputs:
@@ -69,7 +71,7 @@ for path in outputs:
     subprocess.run(["ffmpeg", "-v", "error", "-xerror", "-i", str(path), "-f", "null", "-"], check=True, capture_output=True)
     report["outputs"].append({"file": path.name, "image_size": dimensions, "image_warnings": [str(notice.message) for notice in notices], "mdat_sha256": payload_hashes(path), "metadata_equal": True, "decode": "passed"})
 
-(root / "test-results" / "independent-validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+(results / "independent-validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 print(f"Pillow {pillow_version}: all {len(outputs)} ICO outputs load at original dimensions with matching alpha")
 print(f"FFprobe/FFmpeg: all {len(outputs)} outputs retain exact mdat hashes and playback metadata, and fully decode")
 print("Large ICO entries generate Pillow's expected size warning; full embedded PNG dimensions are retained")

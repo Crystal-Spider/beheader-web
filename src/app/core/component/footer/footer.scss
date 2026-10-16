@@ -34,3 +34,9 @@
   height: 1rem;
   color: #bcb6c1;
 }
+
+// Inline credit must remain distinguishable without relying on its color.
+.credit a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

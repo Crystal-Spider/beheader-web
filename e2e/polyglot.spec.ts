@@ -2,6 +2,8 @@ import {mkdirSync, readFileSync, readdirSync, writeFileSync} from 'node:fs';
 import {buildSync} from 'esbuild';
 import {expect, test} from '@playwright/test';
 
+import {evidenceDirectory} from './evidence';
+
 const harness = buildSync({entryPoints: ['e2e/processing-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwHarness', platform: 'browser'}).outputFiles[0]!.text;
 const fixture = (name: string): number[] => Array.from(readFileSync(`e2e/fixture/${name}`));
 
@@ -19,7 +21,7 @@ for (const [image, media, withHtml] of [
   ['transparent.png', 'video-co64.mp4', true],
   ['large-dimensions.png', 'video-tail-moov.mp4', true]
 ] as const) {
-  test(`generates ${image} + ${media}${withHtml ? ' + UTF-8 HTML' : ''} with independent browser decoding`, async({page}) => {
+  test(`generates ${image} + ${media}${withHtml ? ' + UTF-8 HTML' : ''} with independent browser decoding`, async({page, browserName}) => {
     const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({image, media, imageBytes, mediaBytes, workerFile, withHtml}) => {
       const {WorkerClient, cleanupJob, resolveArtifact} = window.bhwHarness;
@@ -112,10 +114,10 @@ for (const [image, media, withHtml] of [
     }, {image, media, imageBytes: fixture(image), mediaBytes: fixture(media), workerFile, withHtml});
     expect(result.plan).toMatchObject({operation: 'plan', plan: {ready: true, diagnostics: []}});
     expect(result.interpretations.map(interpretation => interpretation.family)).toEqual(withHtml ? ['image', 'media', 'html'] : ['image', 'media']);
-    expect(result.image.width).toBe(image === 'large-dimensions.png' ? 256 : 32);
+    expect(result.image.width).toBe(image === 'large-dimensions.png' ? (browserName === 'chromium' ? 256 : 320) : 32);
     expect(result.image.height).toBe(image === 'large-dimensions.png' ? 240 : 24);
     expect(result.embeddedSize).toEqual(image === 'large-dimensions.png' ? {width: 320, height: 240} : {width: 32, height: 24});
-    if (image === 'large-dimensions.png') {
+    if (image === 'large-dimensions.png' && browserName === 'chromium') {
       // Chromium's ICO decoder does not render oversized PNG entries; full PNG and other readers are checked separately.
       expect(result.image.alpha).toBe(0);
     } else if (image.endsWith('.png') || image.endsWith('.webp')) { expect(result.image.alpha).toBe(128); }
@@ -123,8 +125,9 @@ for (const [image, media, withHtml] of [
     expect(result.outputVideo.duration).toBeCloseTo(1, 3);
     expect(result.monotonic).toBe(true);
     if (withHtml) { expect(result.htmlResult).toEqual([{fixture: 'html', text: 'Città, 日本語, 🙂', charset: 'UTF-8'}]); }
-    const filename = `test-results/${image.replace('.', '-')}-${media.replace('.mp4', '')}.polyglot`;
-    mkdirSync('test-results', {recursive: true});
+    const directory = evidenceDirectory(browserName);
+    const filename = `${directory}/${image.replace('.', '-')}-${media.replace('.mp4', '')}.polyglot`;
+    mkdirSync(directory, {recursive: true});
     writeFileSync(filename, new Uint8Array(result.bytes));
   });
 }

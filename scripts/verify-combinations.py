@@ -10,9 +10,10 @@ import zipfile
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "test-results" / "combinations"
+RESULTS = Path(os.environ.get("BHW_VALIDATION_ROOT", ROOT / "test-results"))
+OUTPUT = RESULTS / "combinations"
 FIXTURES = ROOT / "e2e" / "fixture"
-RENDERS = ROOT / "test-results" / "pdf-render"
+RENDERS = RESULTS / "pdf-render"
 RENDERS.mkdir(parents=True, exist_ok=True)
 POPPLER = Path(shutil.which("pdftoppm") or "pdftoppm").parent
 
@@ -109,10 +110,10 @@ for path in outputs:
             assert image.convert("RGBA").getpixel((0, 0))[3] == 128
         checks["ico_dimensions_and_alpha"] = True
     report.append({"families": families, "checks": checks})
-(ROOT / "test-results" / "combination-validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+(RESULTS / "combination-validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 print(f"All {len(outputs)} combinations passed independent interpretation checks")
 for name, order in [("selected", ["first.zip", "second.zip"]), ("reversed", ["second.zip", "first.zip"])]:
-    path = ROOT / "test-results" / "archive-order" / f"{name}.polyglot"
+    path = RESULTS / "archive-order" / f"{name}.polyglot"
     expected = {}
     for archive_name in order:
         with zipfile.ZipFile(FIXTURES / archive_name) as archive:

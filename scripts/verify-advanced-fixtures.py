@@ -1,5 +1,6 @@
 """Independently validate the all-family artifact containing Milestone 7 raw payloads."""
 import runpy
+import os
 from pathlib import Path
 import subprocess
 import zipfile
@@ -7,7 +8,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 checks = runpy.run_path(str(ROOT / 'scripts' / 'verify-combinations.py'))
-path = ROOT / 'test-results' / 'advanced' / 'all.polyglot'
+path = Path(os.environ.get('BHW_VALIDATION_ROOT', ROOT / 'test-results')) / 'advanced' / 'all.polyglot'
 fixtures = ROOT / 'e2e' / 'fixture'
 with Image.open(path) as image:
     image.load()

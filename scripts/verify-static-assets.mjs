@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL('../docs/', import.meta.url));
 const prefix = '/beheader-web/';
 const manifest = JSON.parse(readFileSync(resolve(root, 'ngsw.json'), 'utf8'));
 assert.equal(manifest.index, `${prefix}index.html`);
+assert.match(readFileSync(resolve(root, 'index.html'), 'utf8'), /<base href="\/beheader-web\/">/);
 for (const [url, expected] of Object.entries(manifest.hashTable)) {
   assert.ok(url.startsWith(prefix), `Unexpected cache scope: ${url}`);
   const path = resolve(root, decodeURIComponent(url.slice(prefix.length)));
@@ -19,5 +20,9 @@ for (const name of readdirSync(root).filter(name => /^(?:main-|chunk-|worker-[A-
   assert.ok(Object.hasOwn(manifest.hashTable, prefix + name), `Missing lazy/worker cache entry: ${name}`);
 }
 for (const name of ['picture.png', 'tone.mp3', 'page.html']) { assert.ok(Object.hasOwn(manifest.hashTable, `${prefix}assets/example/${name}`)); }
+for (const name of ['GPL-3.0.txt', 'BEHEADER-NOTICES.txt', 'AUDIO-NOTICES.txt', 'MPL-2.0.txt', 'LGPL-2.1.txt', 'GOLT-MIT.txt', 'SIMPLE-ICONS-CC0.txt']) {
+  assert.ok(Object.hasOwn(manifest.hashTable, `${prefix}assets/license/${name}`), `Missing offline license: ${name}`);
+}
+assert.ok(readFileSync(resolve(root, '3rdpartylicenses.txt')).length > 0);
 assert.ok(manifest.assetGroups.every(group => group.installMode === 'prefetch' && group.updateMode === 'prefetch'));
 console.log(`Offline manifest: ${Object.keys(manifest.hashTable).length} asset hashes and all lazy/processing chunks verified`);

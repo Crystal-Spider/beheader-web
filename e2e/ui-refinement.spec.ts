@@ -67,7 +67,8 @@ test('sorts file cards by dragging a dedicated handle with a stable final order 
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
   const source = page.getByRole('article', {name: 'second.zip', exact: true});
   const target = page.getByRole('article', {name: 'classic.pdf', exact: true});
-  await source.scrollIntoViewIfNeeded();
+  // Center the whole list so the destination stays inside Firefox's viewport during release.
+  await page.locator('.selected-files').evaluate(element => element.scrollIntoView({block: 'center'}));
   const handle = await source.getByRole('button', {name: 'Reorder file', exact: true}).boundingBox();
   const destination = await target.boundingBox();
   await page.mouse.move(handle!.x + handle!.width / 2, handle!.y + handle!.height / 2);
@@ -188,6 +189,9 @@ test('keeps pointer cursors while selects are open and clears mouse-dismissed bo
     await expect(page.getByRole('listbox')).toBeHidden();
     await expect(control.locator('.mat-mdc-select-trigger')).toHaveCSS('border-top-color', 'rgb(66, 64, 74)');
     await control.focus();
+    // Real keyboard traversal establishes :focus-visible consistently across engines.
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Enter');
     await page.keyboard.press('Escape');
     await expect(control.locator('.mat-mdc-select-trigger')).toHaveCSS('border-top-color', 'rgb(197, 142, 255)');
