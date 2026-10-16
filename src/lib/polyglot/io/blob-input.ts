@@ -7,7 +7,7 @@ export class BlobInput implements SeekableInput {
   /**
    * @param {Blob} blob Immutable file-backed or in-memory source.
    */
-  public constructor(private readonly blob: Blob) {}
+  public constructor(public readonly blob: Blob) {}
 
   /**
    * @returns {number} Source byte count without allocating its contents.

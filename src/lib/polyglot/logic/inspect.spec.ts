@@ -4,7 +4,7 @@ import {InputSource, ProcessingContext} from '../model/contract';
 import {BlobInput} from '../io/blob-input';
 import {CHUNK_BYTES, INPUT_LIMIT, TOTAL_INPUT_LIMIT, validRange} from '../io/bytes';
 import {inspectInputs} from './inspect';
-import {generateResult, planComposition} from './compose';
+import {planComposition} from './compose';
 
 const context = (): ProcessingContext => ({signal: new AbortController().signal, progress: vi.fn()});
 const source = (id: string, name: string, contents: BlobPart[], role?: InputSource['role']): InputSource => ({
@@ -101,7 +101,6 @@ describe('inspection and role planning', () => {
     const plan = planComposition(result, context());
     expect(plan.families).toEqual(['pdf']);
     expect(plan.diagnostics.map(item => item.code)).toEqual(expect.arrayContaining(['MINIMUM_FAMILIES', 'MISSING_HTML', 'IMPLEMENTATION_UNAVAILABLE']));
-    expect(() => generateResult(plan, context())).toThrow();
   });
 
   it('cancels before reading and rejects duplicate IDs without reading', async() => {

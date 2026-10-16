@@ -1,6 +1,8 @@
 import {OperationResult, WorkerResponse} from '../model/contract';
 import {BlobInput} from '../io/blob-input';
-import {generateResult, planComposition} from '../logic/compose';
+import {prepareComposition} from '../logic/compose';
+import {generateResult} from '../logic/generate';
+import {TemporaryStorage} from '../io/temporary-storage';
 import {diagnose} from '../logic/diagnostic';
 import {inspectInputs} from '../logic/inspect';
 import {isRecord, isWorkerRequest} from './protocol';
@@ -43,6 +45,7 @@ export class WorkerRuntime {
         this.send({type: 'progress', jobId, progress});
       }
     };
+    let storage: TemporaryStorage | undefined;
     try {
       const sources = request.inputs.map(input => ({
         id: input.id, name: input.file.name, mediaType: input.file.type,
@@ -53,12 +56,24 @@ export class WorkerRuntime {
       if (request.operation === 'inspect') {
         result = {operation: 'inspect', inspection};
       } else {
-        const plan = planComposition(inspection, context);
-        if (request.operation === 'generate') { generateResult(plan, context); }
-        result = {operation: 'plan', plan};
+        const prepared = await prepareComposition(inspection, sources, context);
+        if (request.operation === 'generate') {
+          if (!prepared.plan.ready) {
+            const diagnostic = prepared.plan.diagnostics.find(diagnostic => diagnostic.severity === 'error');
+            this.send({type: 'failed', jobId, diagnostic: diagnostic ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'}});
+            return;
+          }
+          storage = await TemporaryStorage.create(jobId);
+          const artifact = await generateResult(prepared, storage, context);
+          result = {operation: 'generate', artifact, interpretations: prepared.plan.interpretations};
+        } else { result = {operation: 'plan', plan: prepared.plan}; }
       }
       this.send({type: 'complete', jobId, result});
     } catch(error) {
+      if (storage) {
+        try { await storage.dispose(); }
+        catch { this.send({type: 'failed', jobId, diagnostic: {code: 'CLEANUP_FAILED', severity: 'error'}}); return; }
+      }
       this.send({type: 'failed', jobId, diagnostic: diagnose(error, 'WORKER_FAILED')});
     } finally { this.active = null; }
   }

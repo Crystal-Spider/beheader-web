@@ -47,6 +47,25 @@ export async function cleanupJob(jobId: string): Promise<void> {
   }
 }
 
+/**
+ * Resolves a retained worker result without reading its complete payload or recreating its job.
+ * @param {ArtifactReference} artifact Opaque worker result.
+ * @returns {Promise<File>} File-backed snapshot, valid until explicit cleanup.
+ */
+export async function resolveArtifact(artifact: ArtifactReference): Promise<File> {
+  validateStorageId(artifact.jobId);
+  validateStorageId(artifact.id);
+  if (!Number.isSafeInteger(artifact.size) || artifact.size < 0) { throw new ProcessingError({code: 'INVALID_SIZE', severity: 'error'}); }
+  try {
+    const root = await storageRoot();
+    const job = await root.getDirectoryHandle(artifact.jobId);
+    const handle = await job.getFileHandle(artifact.id);
+    const file = await handle.getFile();
+    if (file.size !== artifact.size) { throw new ProcessingError({code: 'TRUNCATED_INPUT', severity: 'error'}); }
+    return file;
+  } catch(error) { throw new ProcessingError(diagnose(error)); }
+}
+
 /** Job-scoped temporary files and output references; all live handles stay outside state. */
 export class TemporaryStorage {
   /** @type {Set<OutputWriter>} */

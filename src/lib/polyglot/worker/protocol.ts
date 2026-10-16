@@ -52,5 +52,10 @@ export function isWorkerResponse(value: unknown): value is WorkerResponse {
   if (value['type'] !== 'complete' || !isRecord(result)) { return false; }
   if (result['operation'] === 'inspect') { return isRecord(result['inspection']) && Array.isArray(result['inspection']['inputs']) && Array.isArray(result['inspection']['diagnostics']); }
   if (result['operation'] === 'plan') { return isRecord(result['plan']) && Array.isArray(result['plan']['inputs']) && Array.isArray(result['plan']['diagnostics']); }
-  return result['operation'] === 'generate' && isRecord(result['artifact']) && Array.isArray(result['interpretations']);
+  const artifact = result['artifact'];
+  if (result['operation'] !== 'generate' || !isRecord(artifact) || !Array.isArray(result['interpretations'])
+    || artifact['jobId'] !== value['jobId'] || typeof artifact['id'] !== 'string' || typeof artifact['mediaType'] !== 'string'
+    || typeof artifact['size'] !== 'number' || !Number.isSafeInteger(artifact['size']) || artifact['size'] < 0) { return false; }
+  try { validateStorageId(artifact['id']); } catch { return false; }
+  return true;
 }

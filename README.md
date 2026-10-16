@@ -2,7 +2,7 @@
 
 A browser-only polyglot generator inspired by [Beheader](https://github.com/p2r3/beheader). This is an independent project.
 
-**Status: Milestone 3 — processing contracts, workers, and bounded I/O.** The responsive English/Italian shell now has a framework-independent processing foundation behind it. Inspection, role validation, worker ownership, cancellation, and temporary-file I/O are implemented. File selection and generation remain visibly unavailable; no polyglot composition is advertised yet.
+**Status: Milestone 4 — first image/MP4/HTML polyglot.** The processing API can generate one file interpreted as an ICO image and H.264 MP4, with optional UTF-8 HTML. The responsive English/Italian interface still disables selection/generation until its generator-experience milestone. There are no in-app content previews.
 
 ## Requirements
 
@@ -60,11 +60,19 @@ The shared contract defines inspection, composition planning, and generation wit
 
 Before reading content, inspection rejects inputs over 1 GiB, totals over 2 GiB, invalid sizes, and duplicate IDs. Exact limits are accepted for an attempted operation. Detection reads at most 64 KiB from the head and 65,557 bytes from the tail. Signatures and extension/MIME hints are recorded separately; conflicting families require an explicit `FileInput.role` override and reinspection. Detection is provisional: it does not validate codecs, animation, PDF cross-references, archive integrity, or whether a consumer will accept a generated file.
 
-Planning permits one image, one media input, one HTML input, one PDF, and ordered multiple archives. HTML asset ZIPs, appendables, and extra-header data have explicit auxiliary roles and never count toward the minimum of two different families. Asset ZIPs require an HTML input. No combination is ready in Milestone 3: plans contain `IMPLEMENTATION_UNAVAILABLE` and no supported output interpretations; generation fails explicitly at that boundary.
+Planning permits one image, one media input, one HTML input, one PDF, and ordered multiple archives. HTML asset ZIPs, appendables, and extra-header data have explicit auxiliary roles and never count toward the minimum of two different families. Asset ZIPs require an HTML input. The currently implemented combinations require image + compatible MP4, with optional HTML; other roles/combinations return `IMPLEMENTATION_UNAVAILABLE` until their milestones.
+
+Preparation validates static PNG, JPEG, GIF, WebP, and supported BMP inputs before browser PNG normalization, rejecting animation and unsupported multipage inputs. Images retain their dimensions and transparency; a 32-megapixel decoded-pixel limit and 32,767-pixel dimension limit bound allocation attempts. SVG, AVIF/HEIF, single-image ICO, and static TIFF decoding are outside the current implementation. ICO directory dimensions cannot represent more than 256 pixels, so larger embedded PNGs depend on the consumer: Pillow opens the full-resolution fixture, while Chromium's ICO decoder fails to render it. The full PNG is retained without automatic resizing. See the compatibility evidence before assuming universal viewer support.
+
+Compatible MP4 currently means a non-fragmented, unencrypted, self-contained `avc1` H.264 video track with optional AAC-LC mono/stereo audio and supported classic sample tables. Preparation validates box boundaries, decoder descriptions, sample/chunk counts, chunk spans within `mdat`, edit lists, and required playback headers. The writer replaces `ftyp` with canonical compatible brands, copies encoded data and playback metadata, and repairs every `stco`/`co64` entry using checked arithmetic. It performs no video or audio transcoding. Unknown relocation-sensitive structures, unsupported codecs/tracks, and malformed tables fail explicitly.
+
+HTML is checked as UTF-8 through bounded reads and embedded using byte lengths. Its document is copied without execution or remote fetching during processing. A body wrapper hides the binary prefix, and a hidden `plaintext` tail prevents trailing binary from becoming active markup, even if it contains HTML comment terminators. Local/remote references remain unchanged until the asset-bundling milestone. The result offers `.ico`, `.mp4`, and, when supplied, `.html`/`.htm` interpretations of identical bytes; `.png` is not an interpretation of the complete file.
 
 `BlobInput` exposes seekable bounded reads, suitable for future archive-directory inspection without a whole-archive stream buffer. `OutputWriter` copies sequential chunks with backpressure, patches existing offsets, enforces caller-supplied output limits, and rejects unsafe arithmetic or further writes after a sink failure. Each read/write is limited to 1 MiB. The same path works for small and large files; format-specific resource estimation and the full large-job policy remain later work.
 
 `TemporaryStorage` writes to job UUID directories inside the application's `beheader-web-polyglot-v1` OPFS namespace. Artifacts remain file-backed and must be consumed while their workspace is retained. Disposal aborts unfinished streams and removes only the owning job. Forced cancellation terminates the worker before generation-workspace cleanup. Storage denial, quota exhaustion, and cleanup failure produce safe diagnostic codes, without raw browser messages or file names. Abrupt browser/process termination can leave an abandoned workspace; startup cleanup and cross-tab coordination belong to Milestone 9.
+
+`Processing.run({operation: 'plan' | 'generate', inputs})` prepares or generates the selected `FileInput` records. A successful generation returns an artifact reference and supported interpretations. Use `Processing.resolve(artifact)` for a file-backed download source and `Processing.release(artifact)` after downloads no longer need it. The current output limit is 2 GiB. Successful worker termination retains the artifact; cancellation or processing failure removes its partial workspace.
 
 ## Static output
 
@@ -81,8 +89,10 @@ Verified on 2026-10-16 with nvm-managed Node 24.19.0 and pnpm 11.25.0:
 - Production build directly into `docs/`.
 - Unit tests cover language resolution, detection/role ambiguity, static size rejection, bounded random access, output patching/limits/backpressure, cancellation, worker crashes/protocol failures, stale messages, and cleanup races. A synthetic 1 GiB source is copied without allocating a complete payload; this does not establish that every device can process a real 1 GiB composition.
 - Chromium flows under `/beheader-web/` cover the shell and both languages at 320, 390, 768, and 1280 pixels, actual production-worker File cloning/inspection/planning/retry, file-backed output/patching, storage denial/quota errors, and cleanup after forced worker termination. A separate job and another application's OPFS directory survive cleanup.
+- Milestone 4 totals: 72 unit tests and 24 Chromium flows, including actual generation, image/media decoding, HTML execution only when opening a controlled output fixture, cancellation during output, and cleanup after decoder failure.
+- Independent Pillow 12.0.0 and FFprobe/FFmpeg checks passed for seven outputs, including retained full-resolution image dimensions/alpha, exact `mdat` SHA-256 matches, unchanged probed playback metadata, and full media decoding. Run `python scripts/verify-polyglot-fixtures.py` after Playwright to reproduce these additional checks; Pillow and FFmpeg are test tools, not application dependencies.
 
-See [Milestone 3 evidence and limitations](MILESTONE-3.md). Format processing/generation, full generator controls, offline caching, deployment automation, abandoned-job recovery, and non-Chromium browser acceptance remain later milestones.
+See [Milestone 4 evidence and limitations](MILESTONE-4.md), plus the historical [Milestone 3 report](MILESTONE-3.md). PDF/archive composition, flexible combinations, audio conversion, asset bundling, full generator controls, offline caching, deployment automation, abandoned-job recovery, and non-Chromium browser acceptance remain later milestones.
 
 ## License
 
