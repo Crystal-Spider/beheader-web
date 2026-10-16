@@ -1,6 +1,5 @@
 {
   "navigation": {
-    "skip": "Vai al contenuto",
     "language": "Lingua"
   },
   "hero": {
@@ -31,6 +30,7 @@
     "outputHint": "Un solo download. Modi diversi di aprirlo."
   },
   "availability": {
+    "MEDIA_SLOT_OCCUPIED": "Audio e video condividono uno slot: scegli un file audio oppure un file video. Rimuovi o sostituisci il file multimediale selezionato per sceglierne un altro.",
     "FORMAT_RESOURCE_LIMIT": "Rimuovi un file prima di aggiungerne un altro.",
     "COMBINATION_UNSUPPORTED": "La compatibilità di questa combinazione non è stata verificata.",
     "ROLE_CONFLICT": "Questo ruolo è già occupato. Rimuovi o sostituisci il file selezionato.",
@@ -40,7 +40,7 @@
   },
   "footer": {
     "inspired": "Ispirato a",
-    "independent": "Un progetto indipendente. Non affiliato a Beheader.",
+    "independent": "Un progetto indipendente e non affiliato.",
     "links": "Collegamenti del progetto",
     "source": "Codice",
     "patreon": "Patreon",
@@ -69,7 +69,11 @@
     "filename": "Nome del risultato",
     "extension": "Estensione",
     "download": "Scarica file",
-    "sameBytes": "Ogni estensione scarica gli stessi byte. La compatibilità dipende dal programma; conserva i file originali."
+    "sameBytes": "Ogni estensione scarica gli stessi byte. La compatibilità dipende dal programma; conserva i file originali.",
+    "reorder": "Riordina file",
+    "reorderHint": "Trascina la maniglia per riordinare. Quando la maniglia ha il focus, usa le frecce Su e Giù.",
+    "reordered": "Spostato alla posizione {{position}} di {{count}}.",
+    "busyReason": "Attendi il termine dell’operazione in corso oppure annullala."
   },
   "role": {
     "auto": "Rilevamento automatico",

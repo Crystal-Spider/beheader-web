@@ -1,0 +1,24 @@
+@use '@angular/material' as mat;
+@use 'variables' as *;
+:host {
+  @include mat.icon-button-overrides((icon-size: 1.5rem, state-layer-size: 2.75rem, touch-target-size: 2.75rem));
+  display: inline-flex;
+  flex-shrink: 0;
+}
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
+  color: $muted;
+}
+button:not(:disabled):hover {
+  color: $accent;
+}
+bhw-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}

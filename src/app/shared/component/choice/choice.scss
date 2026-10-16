@@ -1,4 +1,16 @@
 @use 'variables' as *;
-:host { display: block; min-width: 0; }
-.field-label { display: block; margin-bottom: 0.4rem; color: $muted; font-size: 0.75rem; }
-mat-select { box-sizing: border-box; padding: 0.65rem 0.75rem; border: 1px solid $border; border-radius: 0.65rem; }
+:host {
+  display: block;
+  min-width: 0;
+}
+.field-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: $muted;
+  font-size: 0.75rem;
+}
+mat-select {
+  box-sizing: border-box;
+  border-radius: 1rem;
+  background: $background;
+}

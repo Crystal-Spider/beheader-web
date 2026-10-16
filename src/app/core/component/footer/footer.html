@@ -1,0 +1,15 @@
+<ng-container *transloco="let t">
+  <footer class="app-footer">
+    <div class="credit">
+      <p>{{ t('footer.inspired') }} <a href="https://github.com/p2r3/beheader" rel="noopener noreferrer" target="_blank">Beheader</a>.</p>
+      <p>{{ t('footer.independent') }}</p>
+    </div>
+    <nav [attr.aria-label]="t('footer.links')">
+      <a href="https://github.com/Crystal-Spider/beheader-web" rel="noopener noreferrer" target="_blank"><bhw-icon name="github" />{{ t('footer.source') }}</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://www.patreon.com/crystalspider" rel="noopener noreferrer" target="_blank"><bhw-icon name="patreon" />{{ t('footer.patreon') }}</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://ko-fi.com/crystalspider" rel="noopener noreferrer" target="_blank"><bhw-icon name="kofi" />{{ t('footer.kofi') }}</a>
+    </nav>
+  </footer>
+</ng-container>

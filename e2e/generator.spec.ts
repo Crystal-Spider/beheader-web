@@ -102,9 +102,12 @@ test('reorders archive inputs and resolves collisions according to selected orde
   await page.getByTestId('file-picker').setInputFiles(['e2e/fixture/classic.pdf', 'e2e/fixture/first.zip', 'e2e/fixture/second.zip']);
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
   await expect(page.locator('.diagnostics')).toContainText('ARCHIVE_COLLISION');
-  await page.getByRole('article', {name: 'second.zip', exact: true}).getByRole('button', {name: 'Move up', exact: true}).click();
+  const handle = page.getByRole('article', {name: 'second.zip', exact: true}).getByRole('button', {name: 'Reorder file', exact: true});
+  await handle.focus();
+  await handle.press('ArrowUp');
   await expect(page.locator('.selected-file h3')).toHaveText(['classic.pdf', 'second.zip', 'first.zip']);
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
+  await expect(handle).toBeFocused();
   await page.getByRole('button', {name: 'Combine files', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Download file', exact: true})).toBeEnabled();
 });

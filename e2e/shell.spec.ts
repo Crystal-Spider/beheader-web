@@ -81,7 +81,8 @@ test('ships its UI assets locally and links to the source and funding destinatio
   await expect(page.getByRole('link', {name: 'Source', exact: true})).toHaveAttribute('href', 'https://github.com/Crystal-Spider/beheader-web');
   await expect(page.getByRole('link', {name: 'Patreon', exact: true})).toHaveAttribute('href', 'https://www.patreon.com/crystalspider');
   await expect(page.getByRole('link', {name: 'Ko-fi', exact: true})).toHaveAttribute('href', 'https://ko-fi.com/crystalspider');
-  await expect(page.locator('bhw-icon svg')).toHaveCount(10);
+  await expect(page.locator('.app-footer nav bhw-icon svg')).toHaveCount(3);
+  await expect(page.locator('.format-list bhw-icon svg')).toHaveCount(6);
   const audio = page.getByRole('list', {name: 'Available input types'}).getByRole('listitem').filter({has: page.getByRole('button', {name: 'Audio', exact: true})});
   await expect(audio).toHaveAttribute('aria-disabled', 'false');
   await expect(page.getByRole('list', {name: 'Available input types'}).getByRole('listitem').filter({has: page.getByRole('button', {name: 'Video', exact: true})})).toHaveAttribute('aria-disabled', 'false');

@@ -1,6 +1,5 @@
 {
   "navigation": {
-    "skip": "Skip to content",
     "language": "Language"
   },
   "hero": {
@@ -31,6 +30,7 @@
     "outputHint": "One download. Different ways to open it."
   },
   "availability": {
+    "MEDIA_SLOT_OCCUPIED": "Audio and video share one slot: choose one audio file or one video file. Remove or replace the selected media file to choose another.",
     "FORMAT_RESOURCE_LIMIT": "Remove a file before adding another input.",
     "COMBINATION_UNSUPPORTED": "This combination has not been verified as compatible.",
     "ROLE_CONFLICT": "This input slot is occupied. Remove or replace the selected file.",
@@ -40,7 +40,7 @@
   },
   "footer": {
     "inspired": "Inspired by",
-    "independent": "An independent project. Not affiliated with Beheader.",
+    "independent": "An independent, unaffiliated project.",
     "links": "Project links",
     "source": "Source",
     "patreon": "Patreon",
@@ -69,7 +69,11 @@
     "filename": "Output name",
     "extension": "Extension",
     "download": "Download file",
-    "sameBytes": "Every extension downloads the same bytes. Consumer support varies; keep your original files."
+    "sameBytes": "Every extension downloads the same bytes. Consumer support varies; keep your original files.",
+    "reorder": "Reorder file",
+    "reorderHint": "Drag the handle to reorder. With the handle focused, use the Up and Down arrow keys.",
+    "reordered": "Moved to position {{position}} of {{count}}.",
+    "busyReason": "Wait for the current operation to finish, or cancel it."
   },
   "role": {
     "auto": "Automatic detection",

@@ -12,7 +12,14 @@ export const ICON_FILES = {
   archive: 'folder_zip',
   download: 'download',
   privacy: 'lock',
-  magic: 'auto_awesome'
+  magic: 'auto_awesome',
+  close: 'close',
+  replace: 'change_circle',
+  drag: 'drag_indicator',
+  expand: 'chevron_right',
+  github: 'github',
+  patreon: 'patreon',
+  kofi: 'kofi'
 } as const;
 
 /** A registered local icon name. */

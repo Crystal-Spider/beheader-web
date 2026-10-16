@@ -1,5 +1,5 @@
 <ng-container *transloco="let t">
-  <mat-select panelClass="bhw-language-panel" [aria-label]="t('navigation.language')" [hideSingleSelectionIndicator]="false" [panelWidth]="220" [value]="preferences.language()" (selectionChange)="select($event.value)">
+  <mat-select bhwSelectCursor panelClass="bhw-language-panel" [aria-label]="t('navigation.language')" [hideSingleSelectionIndicator]="false" [panelWidth]="220" [value]="preferences.language()" (selectionChange)="select($event.value)">
     <mat-select-trigger>
       <span class="language-trigger">
         <bhw-flag [country]="selected.flag" />

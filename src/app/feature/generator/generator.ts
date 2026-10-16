@@ -1,14 +1,17 @@
-import {ChangeDetectionStrategy, Component, HostListener, computed, signal} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, computed, signal} from '@angular/core';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {Store} from '@ngrx/store';
 
 import {Button} from '~bhw/shared/component/button/button';
 import {Choice} from '~bhw/shared/component/choice/choice';
 import {TextField} from '~bhw/shared/component/text-field/text-field';
+import {Expansion} from '~bhw/shared/component/expansion/expansion';
 import {Icon} from '~bhw/shared/component/icon/icon';
 import {LanguagePicker} from '~bhw/shared/component/language-picker/language-picker';
+import {Footer} from '~bhw/core/component/footer/footer';
 import {Processing} from '~bhw/core/service/processing';
 import {Offline} from '~bhw/core/service/offline';
 import {InputRole} from '~bhw/polyglot/model/contract';
@@ -19,9 +22,10 @@ import {selectionFeature} from './redux/selection';
 import {jobActions, jobFeature} from './redux/job';
 import {GeneratorSession} from './service/generator-session';
 import {diagnosticReport, issueUrl, outputName} from './logic/diagnostics';
+import {InputList} from './component/input-list/input-list';
 
 /** Complete local generator: metadata controls only, without uploaded-content previews. */
-@Component({selector: 'bhw-generator', imports: [TranslocoDirective, Button, Choice, TextField, Icon, LanguagePicker, MatCheckboxModule, MatProgressBarModule], templateUrl: './generator.html', styleUrl: './generator.scss', changeDetection: ChangeDetectionStrategy.OnPush})
+@Component({selector: 'bhw-generator', imports: [TranslocoDirective, Button, Choice, TextField, Expansion, InputList, Icon, LanguagePicker, Footer, MatCheckboxModule, MatProgressBarModule, MatTooltipModule], templateUrl: './generator.html', styleUrl: './generator.scss', changeDetection: ChangeDetectionStrategy.OnPush})
 export class Generator {
   /** @type {Signal<readonly InputAvailability[]>} */
   public readonly availability;
@@ -29,6 +33,8 @@ export class Generator {
   public readonly accepted;
   /** @type {Signal<readonly InputDescription[]>} */
   public readonly inputs;
+  /** @type {Signal<readonly FileCard[]>} */
+  public readonly cards;
   /** @type {Signal<JobState>} */
   public readonly job;
   /** @type {WritableSignal<string>} */
@@ -56,11 +62,13 @@ export class Generator {
    * @param {Store} store Serializable state.
    * @param {TranslocoService} translations Runtime text.
    * @param {Offline} offline Production caching and idle-only update gate.
+   * @param {ChangeDetectorRef} changeDetector Commits drop ordering before the next browser paint.
    */
-  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService, public readonly offline: Offline) {
+  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService, public readonly offline: Offline, private readonly changeDetector: ChangeDetectorRef) {
     this.availability = store.selectSignal(selectionFeature.selectAvailability);
     this.accepted = store.selectSignal(selectionFeature.selectAcceptedTypes);
     this.inputs = store.selectSignal(selectionFeature.selectInputs);
+    this.cards = computed(() => this.inputs().map(input => ({...input, explicitRole: this.session.role(input.id)})));
     this.job = store.selectSignal(jobFeature.selectJobState);
     this.extensions = computed(() => this.job().interpretations.flatMap(item => item.extensions));
     this.selectedExtension = computed(() => this.extensions().includes(this.extension()) ? this.extension() : this.extensions()[0] ?? '');
@@ -109,6 +117,28 @@ export class Generator {
   public generate(): void { if (!this.job().busy && this.job().plan?.ready) { this.store.dispatch(jobActions.requested({operation: 'generate'})); } }
   /** Requests termination through the worker lifecycle effect. */
   public cancel(): void { this.store.dispatch(jobActions.cancelRequested({})); }
+
+  /**
+   * @param {{id: string; index: number}} event Pointer or keyboard ordering intent.
+   * @param {string} event.id Selected file identity.
+   * @param {number} event.index Target position.
+   */
+  public reorder(event: {id: string; index: number}): void {
+    this.session.move(event.id, event.index);
+    // CDK restores the source DOM synchronously; render the new order before its drop callback returns.
+    this.changeDetector.detectChanges();
+  }
+
+  /**
+   * Explains the shared media slot without implying that a separate audio and video are permitted.
+   * @param {InputAvailability} input Current badge availability.
+   * @returns {string} Localized reason shared by hover and assistive descriptions.
+   */
+  public availabilityReason(input: InputAvailability): string {
+    if (this.job().busy) { return this.translations.translate('ui.busyReason'); }
+    const reason = input.reason === 'ROLE_CONFLICT' && input.family === 'media' ? 'MEDIA_SLOT_OCCUPIED' : input.reason;
+    return reason ? this.translations.translate(`availability.${reason}`) : '';
+  }
 
   /**
    * @returns {readonly {value: string; label: string}[]} Translated role choices.

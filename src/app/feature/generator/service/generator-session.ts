@@ -65,13 +65,17 @@ export class GeneratorSession {
 
   /**
    * @param {string} id Record to move.
-   * @param {number} direction One step in selected ordering.
+   * @param {number} target Destination index in selected ordering.
    */
-  public move(id: string, direction: number): void {
+  public move(id: string, target: number): void {
     if (this.busy()) { return; }
-    const inputs = [...this.inputs]; const index = inputs.findIndex(input => input.id === id); const other = index + direction;
-    if (index < 0 || other < 0 || other >= inputs.length) { return; }
-    [inputs[index], inputs[other]] = [inputs[other]!, inputs[index]!]; this.inputs = inputs; this.options = {...this.options, allowUnresolved: false}; this.refresh();
+    const inputs = [...this.inputs]; const index = inputs.findIndex(input => input.id === id);
+    if (index < 0 || !Number.isInteger(target) || target < 0 || target >= inputs.length || target === index) { return; }
+    inputs.splice(target, 0, inputs.splice(index, 1)[0]!);
+    this.inputs = inputs;
+    // Publish ordering before worker reinspection so CDK's drop cleanup cannot reveal stale cards.
+    this.store.dispatch(selectionActions.reordered({ids: inputs.map(input => input.id)}));
+    this.options = {...this.options, allowUnresolved: false}; this.refresh();
   }
 
   /** Starts reinspection after a file, order, or explicit unresolved-resource choice changes. */

@@ -1,0 +1,36 @@
+@use 'variables' as *;
+:host {
+  display: block;
+}
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-top: 2.5rem;
+  padding-block: 1.5rem;
+  border-top: 1px solid $border;
+  color: $muted;
+  font-size: 0.75rem;
+}
+.app-footer p {
+  margin: 0;
+}
+.app-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.app-footer nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+}
+.app-footer nav bhw-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #bcb6c1;
+}

@@ -1,5 +1,6 @@
 import {DefaultTreeAdapterTypes, parse, serialize} from 'parse5';
-import {CssNode, generate, parse as parseCss, walk} from 'css-tree';
+import {CssNode} from 'css-tree';
+import {generate, parse as parseCss, walk} from 'css-tree/dist/csstree.esm';
 
 import {CompositionOptions, HtmlReference, InputSource, ProcessingContext} from '../model/contract';
 import {CHUNK_BYTES} from '../io/bytes';

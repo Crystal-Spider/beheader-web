@@ -8,6 +8,17 @@ import {selectionActions, selectionFeature} from './selection';
 const input = (id: string, role: InputDescription['role']): InputDescription => ({id, role, name: `${id}.fixture`, size: 10, candidates: []});
 
 describe('selection-dependent input availability', () => {
+  it('publishes a non-adjacent reorder immediately while preserving metadata and rejects incomplete orders', () => {
+    const reducer = selectionFeature.reducer;
+    const inputs = [input('pdf', 'pdf'), input('first', 'archive'), input('second', 'archive')];
+    const state = reducer(undefined, selectionActions.changed({inputs}));
+    const reordered = reducer(state, selectionActions.reordered({ids: ['second', 'pdf', 'first']}));
+    expect(reordered.inputs).toEqual([inputs[2], inputs[0], inputs[1]]);
+    expect(reordered.inputs[0]).toBe(inputs[2]);
+    expect(reducer(reordered, selectionActions.reordered({ids: ['pdf', 'first']}))).toBe(reordered);
+    expect(reducer(reordered, selectionActions.reordered({ids: ['pdf', 'first', 'first']}))).toBe(reordered);
+  });
+
   it('disables both media kinds for an occupied slot, excludes their chooser hints, and re-enables after removal', () => {
     const before = inputAvailability([], {audio: true});
     expect(before.every(item => item.enabled)).toBe(true);

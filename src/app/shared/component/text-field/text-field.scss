@@ -1,4 +1,30 @@
 @use 'variables' as *;
-:host { display: block; min-width: 0; }
-label span { display: block; margin-bottom: 0.4rem; color: $muted; font-size: 0.75rem; }
-input { box-sizing: border-box; width: 100%; padding: 0.65rem 0.75rem; border: 1px solid $border; border-radius: 0.65rem; background: transparent; color: $foreground; font: inherit; }
+:host {
+  display: block;
+  min-width: 0;
+}
+label span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: $muted;
+  font-size: 0.75rem;
+}
+input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid $border;
+  border-radius: 1rem;
+  background: $background;
+  color: $foreground;
+  font: inherit;
+  transition: border-color 180ms ease;
+}
+input:not(:disabled):hover,
+input:not(:disabled):focus {
+  border-color: $accent;
+}
+input:focus {
+  outline: none;
+}

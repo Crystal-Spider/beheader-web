@@ -1,5 +1,4 @@
 <ng-container *transloco="let t">
-  <a class="skip-link" href="#content">{{ t('navigation.skip') }}</a>
   <div class="app-shell">
     <header class="app-header">
       <a class="wordmark" href="./">beheader<span> web</span></a>
@@ -21,10 +20,10 @@
       @if (job().plan?.resources?.large) { <p class="metadata">{{ t('offline.large') }} {{ size(job().plan?.resources?.temporaryBytes || 0) }}</p> }
       <input #picker data-testid="file-picker" hidden tabindex="-1" type="file" [attr.accept]="pickerAccept || accepted()" [attr.aria-label]="t('generator.choose')" [multiple]="true" (change)="picked(picker)">
 
+      <hr class="section-divider">
       <section aria-labelledby="files-title" class="files-section">
         <div class="section-heading">
           <h2 id="files-title">{{ t('generator.filesTitle') }}</h2>
-          <span aria-hidden="true" class="section-number">01</span>
         </div>
         <div class="file-placeholder">
           <bhw-icon class="upload-icon" name="upload" />
@@ -37,10 +36,10 @@
 
         <ul class="format-list" [attr.aria-label]="t('generator.formatsLabel')">
           @for (input of availability(); track input.kind) {
-            <li [attr.aria-disabled]="!input.enabled" [attr.title]="input.reason ? t('availability.' + input.reason) : null" [class.unavailable]="!input.enabled">
-              <bhw-button appearance="outlined" [block]="true" [compact]="true" [disabled]="job().busy || !input.enabled" [icon]="input.kind" [label]="t('generator.' + input.kind)" (clicked)="choose(picker, input)" />
+            <li [attr.aria-disabled]="job().busy || !input.enabled" [attr.tabindex]="job().busy || !input.enabled ? 0 : null" [class]="'format-' + input.kind" [class.unavailable]="job().busy || !input.enabled" [matTooltip]="availabilityReason(input)" [matTooltipShowDelay]="250">
+              <bhw-button appearance="outlined" [block]="true" [class.unavailable]="job().busy || !input.enabled" [compact]="true" [disabled]="job().busy || !input.enabled" [icon]="input.kind" [label]="t('generator.' + input.kind)" (clicked)="choose(picker, input)" />
               @if (input.reason) {
-                <span class="visually-hidden">{{ t('availability.' + input.reason) }}</span>
+                <span class="visually-hidden">{{ availabilityReason(input) }}</span>
               }
             </li>
           }
@@ -48,30 +47,16 @@
 
         <div class="selection-toolbar">
           <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.example')" (clicked)="example()" />
-          <details>
-            <summary>{{ t('ui.advanced') }}</summary>
+          <bhw-expansion [label]="t('ui.advanced')">
             <p>{{ t('ui.auxiliaryHint') }}</p>
             <div class="actions">
               @for (role of auxiliaryRoles; track role) {
                 <bhw-button appearance="outlined" [disabled]="!auxiliaryEnabled(role)" [label]="t('role.' + role)" (clicked)="choose(picker, role)" />
               }
             </div>
-          </details>
+          </bhw-expansion>
         </div>
-        <div class="selected-files" [attr.aria-label]="t('ui.selected')">
-          @for (input of inputs(); track input.id; let index = $index) {
-            <article class="selected-file" [attr.aria-label]="input.name">
-              <div class="file-metadata"><h3>{{ input.name }}</h3><p>{{ size(input.size) }} · {{ t('role.' + (input.role || 'auto')) }}</p></div>
-              <bhw-choice [disabled]="job().busy" [label]="t('ui.role')" [options]="roles()" [value]="session.role(input.id)" (changed)="session.assign(input.id, $event)" />
-              <div class="actions">
-                <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.replace')" (clicked)="choose(picker, undefined, input.id)" />
-                <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.remove')" (clicked)="session.remove(input.id)" />
-                <bhw-button appearance="outlined" [disabled]="job().busy || index === 0" [label]="t('ui.up')" (clicked)="session.move(input.id, -1)" />
-                <bhw-button appearance="outlined" [disabled]="job().busy || index === inputs().length - 1" [label]="t('ui.down')" (clicked)="session.move(input.id, 1)" />
-              </div>
-            </article>
-          }
-        </div>
+        <bhw-input-list [disabled]="job().busy" [inputs]="cards()" [roles]="roles()" (assigned)="session.assign($event.id, $event.role)" (removed)="session.remove($event)" (reordered)="reorder($event)" (replaced)="choose(picker, undefined, $event)" />
         @for (input of inputs(); track input.id) {
           @if (input.role === 'html') {
             <bhw-text-field [disabled]="job().busy" [label]="t('ui.htmlPath')" [value]="session.options.htmlPath || input.name" (changed)="path($event)" />
@@ -110,10 +95,10 @@
         </div>
       </section>
 
+      <hr class="section-divider">
       <section aria-labelledby="output-title" class="output-section">
         <div class="section-heading">
           <h2 id="output-title">{{ t('generator.outputTitle') }}</h2>
-          <span aria-hidden="true" class="section-number">02</span>
         </div>
         @if (job().artifact; as artifact) {
           <div aria-live="polite" class="result-panel">
@@ -137,18 +122,6 @@
       </section>
     </main>
 
-    <footer class="app-footer">
-      <div class="credit">
-        <p>{{ t('footer.inspired') }} <a href="https://github.com/p2r3/beheader" rel="noopener noreferrer" target="_blank">Beheader</a>.</p>
-        <p>{{ t('footer.independent') }}</p>
-      </div>
-      <nav [attr.aria-label]="t('footer.links')">
-        <a href="https://github.com/Crystal-Spider/beheader-web" rel="noopener noreferrer" target="_blank">{{ t('footer.source') }}</a>
-        <span aria-hidden="true">·</span>
-        <a href="https://www.patreon.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.patreon') }}</a>
-        <span aria-hidden="true">·</span>
-        <a href="https://ko-fi.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.kofi') }}</a>
-      </nav>
-    </footer>
+    <bhw-footer />
   </div>
 </ng-container>

@@ -1,0 +1,14 @@
+<ng-container *transloco="let t">
+  <p class="visually-hidden" id="reorder-hint">{{ t('ui.reorderHint') }}</p>
+  <div cdkDropList cdkDropListOrientation="vertical" class="selected-files" [attr.aria-label]="t('ui.selected')" [cdkDropListData]="inputs()" [cdkDropListDisabled]="disabled()" (cdkDropListDropped)="drop($event)">
+    @for (input of inputs(); track input.id; let index = $index) {
+      <article cdkDrag cdkDragLockAxis="y" class="selected-file" [attr.aria-label]="input.name" [attr.data-file-id]="input.id" [cdkDragDisabled]="disabled()" [cdkDragStartDelay]="{mouse: 0, touch: 150}">
+        <bhw-icon-button cdkDragHandle class="drag-handle" description="reorder-hint" icon="drag" [cdkDragHandleDisabled]="disabled() || inputs().length < 2" [disabled]="disabled() || inputs().length < 2" [label]="t('ui.reorder')" (keydown.arrowdown)="keyboard($event, index, 1)" (keydown.arrowup)="keyboard($event, index, -1)" />
+        <div class="file-metadata"><h3>{{ input.name }}</h3><p>{{ size(input.size) }} · {{ t('role.' + (input.role || 'auto')) }}</p></div>
+        <bhw-icon-button class="remove-action" icon="close" [disabled]="disabled()" [label]="t('ui.remove')" (clicked)="removed.emit(input.id)" />
+        <bhw-choice [disabled]="disabled()" [label]="t('ui.role')" [options]="roles()" [value]="input.explicitRole" (changed)="assigned.emit({id: input.id, role: $event})" />
+        <bhw-icon-button class="replace-action" icon="replace" [disabled]="disabled()" [label]="t('ui.replace')" (clicked)="replaced.emit(input.id)" />
+      </article>
+    }
+  </div>
+</ng-container>

@@ -11,3 +11,7 @@ Third-party dependencies retain their own licenses. Production builds emit their
 Audio processing uses the unmodified, pinned Mediabunny and `@mediabunny/aac-encoder` 1.61.6 packages, by Vanilagy and contributors, under MPL-2.0. The extension bundles a focused FFmpeg AAC encoder as WebAssembly. Local audio component notices and MPL/LGPL license texts are retained under `public/assets/license` and copied to `docs/assets/license`. Exact package/source references and upstream build instructions are recorded there.
 
 Material Design SVG icons are distributed by the `@material-design-icons/svg` package under Apache License 2.0. The selected icon assets and their license are included under `public/assets/icon` and copied into the static build.
+
+The monochrome GitHub, Patreon, and Ko-fi SVG marks come from [Simple Icons](https://github.com/simple-icons/simple-icons), distributed under CC0-1.0; the license is retained in `public/assets/license/SIMPLE-ICONS-CC0.txt`. Brand marks remain the property of their respective owners.
+
+Link-state styling and vertical handle/placeholder drag patterns follow [Game of Life: Tribes](https://github.com/rChimisso/game-of-life-tribes) at commit `6dc4d34e8234791c8cb7c7e7e43a17733535ca4e`. The reference's MIT license is retained in `public/assets/license/GOLT-MIT.txt`; the implementation uses this project's signal APIs, runtime ownership, theme, and accessibility behavior.
