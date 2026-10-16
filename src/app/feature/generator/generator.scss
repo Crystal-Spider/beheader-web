@@ -1,0 +1,195 @@
+@use 'variables' as *;
+
+:host { display: block; }
+
+.app-shell {
+  max-width: 70rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 3rem);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.75rem;
+}
+
+.wordmark {
+  color: $foreground;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+
+  span { color: $muted; font-weight: 400; }
+}
+
+.hero {
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border-radius: clamp(1.5rem, 3vw, 2rem);
+  background: $accent;
+  color: $on-accent;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 40rem;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.75rem);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+}
+
+.hero-description { max-width: 29rem; margin-block: 1.25rem 0; }
+
+.privacy {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-block: 1.5rem 0;
+  font-size: 0.8rem;
+
+  bhw-icon { width: 1rem; height: 1rem; }
+}
+
+.development-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+  margin: 1.25rem 0 2.25rem;
+  color: $muted;
+  font-size: 0.8rem;
+}
+
+.status-label {
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2rem;
+  background: $surface;
+  color: $accent;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+h2 { margin: 0; font-size: 1rem; font-weight: 500; }
+.section-number { color: $muted; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+.file-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  border: 1px dashed $border;
+  border-radius: 1.5rem;
+  background: $surface;
+
+  > div { flex: 1; }
+  h3 { margin: 0; font-size: 1rem; font-weight: 500; }
+  p { max-width: 30rem; margin: 0.4rem 0 0; color: $muted; font-size: 0.85rem; }
+}
+
+.upload-icon { width: 2rem; height: 2rem; color: $accent; }
+
+.format-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: $surface;
+    font-size: 0.8rem;
+  }
+
+  bhw-icon { width: 1.2rem; height: 1.2rem; color: $muted; }
+}
+
+.combine-area {
+  margin-block: 1.25rem 2rem;
+  p { margin: 0 0 1rem; color: $muted; font-size: 0.8rem; }
+}
+
+.output-section { padding: 1.5rem; border-radius: 1.5rem; background: $surface; }
+
+.output-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem;
+  text-align: center;
+
+  h3 { margin: 1rem 0 0.5rem; font-size: 1rem; font-weight: 500; }
+  p { max-width: 28rem; margin: 0; color: $muted; font-size: 0.85rem; }
+}
+
+.download-icon { width: 2rem; height: 2rem; color: $muted; }
+.output-hint { margin-top: 1.5rem; color: $muted; font-size: 0.75rem; }
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-top: 2.5rem;
+  padding-block: 1.5rem 2.5rem;
+  border-top: 1px solid $border;
+  color: $muted;
+  font-size: 0.75rem;
+
+  p { margin: 0; }
+  .credit p + p { margin-top: 0.35rem; }
+  nav { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+  nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: -5rem;
+  inset-inline-start: 1rem;
+  z-index: 10;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: $surface;
+
+  &:focus { inset-block-start: 0.5rem; }
+}
+
+@media (max-width: 48rem) {
+  .app-header { padding-block: 1.25rem; }
+  .format-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .file-placeholder { flex-wrap: wrap; padding: 1.25rem; }
+  .file-placeholder > div { flex-basis: calc(100% - 3.5rem); }
+  .file-placeholder bhw-button { width: 100%; }
+}
+
+@media (max-width: 28rem) {
+  .format-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-description { font-size: 0.9rem; }
+  .output-section { padding: 1.25rem; }
+}

@@ -1,0 +1,30 @@
+@use 'variables' as *;
+
+:host {
+  display: inline-flex;
+  width: 6.5rem;
+  flex-shrink: 0;
+}
+
+mat-select {
+  padding: 0.75rem;
+  min-height: 2.75rem;
+  border: 1px solid $border;
+  border-radius: 0.75rem;
+  background: $surface;
+}
+
+.language-trigger,
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.language-code {
+  font-weight: 500;
+}
+
+.language-name {
+  color: $muted;
+}

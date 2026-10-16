@@ -1,0 +1,76 @@
+<ng-container *transloco="let t">
+  <a class="skip-link" href="#content">{{ t('navigation.skip') }}</a>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="wordmark" href="./">beheader<span> web</span></a>
+      <bhw-language-picker />
+    </header>
+
+    <main id="content">
+      <section aria-labelledby="hero-title" class="hero">
+        <p class="eyebrow">{{ t('hero.eyebrow') }}</p>
+        <h1 id="hero-title">{{ t('hero.title') }}</h1>
+        <p class="hero-description">{{ t('hero.description') }}</p>
+        <p class="privacy"><bhw-icon name="privacy" />{{ t('hero.privacy') }}</p>
+      </section>
+
+      <p class="development-note" role="status">
+        <span class="status-label">{{ t('generator.status') }}</span>
+        <span>{{ t('generator.notice') }}</span>
+      </p>
+
+      <section aria-labelledby="files-title" class="files-section">
+        <div class="section-heading">
+          <h2 id="files-title">{{ t('generator.filesTitle') }}</h2>
+          <span aria-hidden="true" class="section-number">01</span>
+        </div>
+        <div class="file-placeholder">
+          <bhw-icon class="upload-icon" name="upload" />
+          <div>
+            <h3>{{ t('generator.emptyTitle') }}</h3>
+            <p>{{ t('generator.emptyDescription') }}</p>
+          </div>
+          <bhw-button appearance="outlined" [disabled]="true" [label]="t('generator.choose')" />
+        </div>
+
+        <ul class="format-list" [attr.aria-label]="t('generator.formatsLabel')">
+          <li><bhw-icon name="image" /><span>{{ t('generator.image') }}</span></li>
+          <li><bhw-icon name="media" /><span>{{ t('generator.media') }}</span></li>
+          <li><bhw-icon name="html" /><span>{{ t('generator.html') }}</span></li>
+          <li><bhw-icon name="pdf" /><span>{{ t('generator.pdf') }}</span></li>
+          <li><bhw-icon name="archive" /><span>{{ t('generator.archive') }}</span></li>
+        </ul>
+
+        <div class="combine-area">
+          <p>{{ t('generator.selectionHint') }}</p>
+          <bhw-button icon="magic" [block]="true" [disabled]="true" [label]="t('generator.combine')" />
+        </div>
+      </section>
+
+      <section aria-labelledby="output-title" class="output-section">
+        <div class="section-heading">
+          <h2 id="output-title">{{ t('generator.outputTitle') }}</h2>
+          <span aria-hidden="true" class="section-number">02</span>
+        </div>
+        <div class="output-placeholder">
+          <bhw-icon class="download-icon" name="download" />
+          <h3>{{ t('generator.outputEmptyTitle') }}</h3>
+          <p>{{ t('generator.outputEmptyDescription') }}</p>
+          <span class="output-hint">{{ t('generator.outputHint') }}</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div class="credit">
+        <p>{{ t('footer.inspired') }} <a href="https://github.com/p2r3/beheader" rel="noopener noreferrer" target="_blank">Beheader</a>.</p>
+        <p>{{ t('footer.independent') }}</p>
+      </div>
+      <nav [attr.aria-label]="t('footer.links')">
+        <a href="https://github.com/Crystal-Spider/beheader-web" rel="noopener noreferrer" target="_blank">{{ t('footer.source') }}</a>
+        <a href="https://www.patreon.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.patreon') }}</a>
+        <a href="https://ko-fi.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.kofi') }}</a>
+      </nav>
+    </footer>
+  </div>
+</ng-container>

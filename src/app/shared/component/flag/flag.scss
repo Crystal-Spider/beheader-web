@@ -1,0 +1,11 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+img {
+  display: block;
+  border-radius: 2px;
+  object-fit: cover;
+}

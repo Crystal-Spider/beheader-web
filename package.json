@@ -1,0 +1,66 @@
+{
+  "name": "beheader-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A browser-only polyglot generator inspired by Beheader.",
+  "license": "GPL-3.0-only",
+  "homepage": "https://crystal-spider.github.io/beheader-web/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Crystal-Spider/beheader-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Crystal-Spider/beheader-web/issues"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": "24.19.0",
+    "pnpm": "11.25.0"
+  },
+  "scripts": {
+    "ng": "ng",
+    "serve": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "ngc --project tsconfig.app.json --noEmit && tsc --project tsconfig.tools.json --noEmit",
+    "test": "vitest run --passWithNoTests && playwright test",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:watch": "vitest --passWithNoTests",
+    "test:e2e": "playwright test",
+    "preview": "node scripts/preview.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@angular/cdk": "22.2.3",
+    "@angular/common": "22.2.3",
+    "@angular/compiler": "22.2.3",
+    "@angular/core": "22.2.3",
+    "@angular/forms": "22.2.3",
+    "@angular/material": "22.2.3",
+    "@angular/platform-browser": "22.2.3",
+    "@angular/router": "22.2.3",
+    "@jsverse/transloco": "8.4.0",
+    "@ngrx/effects": "22.0.1",
+    "@ngrx/store": "22.0.1",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "22.2.3",
+    "@angular/cli": "22.2.3",
+    "@angular/compiler-cli": "22.2.3",
+    "@eslint/js": "10.0.1",
+    "@material-design-icons/svg": "0.14.15",
+    "@playwright/test": "1.64.1",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "@types/node": "24.19.2",
+    "angular-eslint": "22.6.0",
+    "eslint": "10.0.1",
+    "eslint-plugin-jsdoc": "65.3.6",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}

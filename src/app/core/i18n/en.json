@@ -1,0 +1,40 @@
+{
+  "navigation": {
+    "skip": "Skip to content",
+    "language": "Language"
+  },
+  "hero": {
+    "eyebrow": "A little file-format magic",
+    "title": "One file. Many possibilities.",
+    "description": "Combine different files into one. Change the extension. See another side.",
+    "privacy": "Your files stay on your device"
+  },
+  "generator": {
+    "status": "In development",
+    "notice": "The generator is taking shape. File selection and generation are not available yet.",
+    "filesTitle": "Your files",
+    "emptyTitle": "A new home for your files",
+    "emptyDescription": "Soon, bring together images, media, pages, documents, and archives.",
+    "choose": "Choose files",
+    "formatsLabel": "Planned file types",
+    "image": "Image",
+    "media": "Audio / video",
+    "html": "HTML",
+    "pdf": "PDF",
+    "archive": "Archives",
+    "selectionHint": "Combine two or more supported file types.",
+    "combine": "Combine files",
+    "outputTitle": "Your polyglot",
+    "outputEmptyTitle": "A new side to every file",
+    "outputEmptyDescription": "Your combined file and its available extensions will appear here.",
+    "outputHint": "One download. Different ways to open it."
+  },
+  "footer": {
+    "inspired": "Inspired by",
+    "independent": "An independent project. Not affiliated with Beheader.",
+    "links": "Project links",
+    "source": "Source",
+    "patreon": "Patreon",
+    "kofi": "Ko-fi"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "navigation": {
+    "skip": "Vai al contenuto",
+    "language": "Lingua"
+  },
+  "hero": {
+    "eyebrow": "Un po’ di magia tra formati",
+    "title": "Un file. Tante possibilità.",
+    "description": "Combina file diversi in uno solo. Cambia estensione. Scopri un altro lato.",
+    "privacy": "I tuoi file restano sul tuo dispositivo"
+  },
+  "generator": {
+    "status": "In sviluppo",
+    "notice": "Il generatore sta prendendo forma. La selezione dei file e la generazione non sono ancora disponibili.",
+    "filesTitle": "I tuoi file",
+    "emptyTitle": "Una nuova casa per i tuoi file",
+    "emptyDescription": "Presto potrai riunire immagini, media, pagine, documenti e archivi.",
+    "choose": "Scegli file",
+    "formatsLabel": "Tipi di file previsti",
+    "image": "Immagine",
+    "media": "Audio / video",
+    "html": "HTML",
+    "pdf": "PDF",
+    "archive": "Archivi",
+    "selectionHint": "Combina due o più tipi di file supportati.",
+    "combine": "Combina file",
+    "outputTitle": "Il tuo file poliglotta",
+    "outputEmptyTitle": "Un nuovo lato per ogni file",
+    "outputEmptyDescription": "Il file combinato e le estensioni disponibili appariranno qui.",
+    "outputHint": "Un solo download. Modi diversi di aprirlo."
+  },
+  "footer": {
+    "inspired": "Ispirato a",
+    "independent": "Un progetto indipendente. Non affiliato a Beheader.",
+    "links": "Collegamenti del progetto",
+    "source": "Codice",
+    "patreon": "Patreon",
+    "kofi": "Ko-fi"
+  }
+}

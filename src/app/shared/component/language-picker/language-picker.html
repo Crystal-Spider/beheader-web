@@ -1,0 +1,19 @@
+<ng-container *transloco="let t">
+  <mat-select panelClass="bhw-language-panel" [aria-label]="t('navigation.language')" [hideSingleSelectionIndicator]="false" [panelWidth]="220" [value]="preferences.language()" (selectionChange)="select($event.value)">
+    <mat-select-trigger>
+      <span class="language-trigger">
+        <bhw-flag [country]="selected.flag" />
+        <span>{{ selected.code.toUpperCase() }}</span>
+      </span>
+    </mat-select-trigger>
+    @for (language of languages; track language.code) {
+      <mat-option [value]="language.code">
+        <span class="language-option">
+          <bhw-flag [country]="language.flag" />
+          <span class="language-code">{{ language.code.toUpperCase() }}</span>
+          <span class="language-name" [attr.lang]="language.code">{{ language.name }}</span>
+        </span>
+      </mat-option>
+    }
+  </mat-select>
+</ng-container>
