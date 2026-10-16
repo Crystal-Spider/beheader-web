@@ -42,7 +42,7 @@ test('uses the production worker for real File cloning, inspection, planning, ca
   expect(result.storage).toEqual([]);
   await page.reload();
   expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
-  await expect(page.getByRole('button', {name: 'Choose files', exact: true})).toBeDisabled();
+  await expect(page.getByRole('button', {name: 'Choose files', exact: true})).toBeEnabled();
 });
 
 test('writes, patches, and reads file-backed artifacts, then cleans only the owning job', async({page}) => {

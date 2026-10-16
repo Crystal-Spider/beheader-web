@@ -82,9 +82,9 @@ test('ships its UI assets locally and links to the source and funding destinatio
   await expect(page.getByRole('link', {name: 'Patreon', exact: true})).toHaveAttribute('href', 'https://www.patreon.com/crystalspider');
   await expect(page.getByRole('link', {name: 'Ko-fi', exact: true})).toHaveAttribute('href', 'https://ko-fi.com/crystalspider');
   await expect(page.locator('bhw-icon svg')).toHaveCount(10);
-  const audio = page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Audio/});
+  const audio = page.getByRole('list', {name: 'Available input types'}).getByRole('listitem').filter({has: page.getByRole('button', {name: 'Audio', exact: true})});
   await expect(audio).toHaveAttribute('aria-disabled', 'false');
-  await expect(page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Video/})).toHaveAttribute('aria-disabled', 'false');
+  await expect(page.getByRole('list', {name: 'Available input types'}).getByRole('listitem').filter({has: page.getByRole('button', {name: 'Video', exact: true})})).toHaveAttribute('aria-disabled', 'false');
   expect(external).toEqual([]);
 });
 
@@ -98,7 +98,7 @@ for (const width of [320, 390, 768, 1280]) {
     await page.getByRole('option', {name: 'IT Italiano'}).click();
     await expect(page.getByRole('heading', {name: 'I tuoi file', exact: true})).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await expect(page.getByRole('list', {name: 'Tipi di file previsti'}).getByRole('listitem')).toHaveCount(6);
+    await expect(page.getByRole('list', {name: 'Tipi di file disponibili'}).getByRole('listitem')).toHaveCount(6);
     await expect(page.getByRole('listbox')).toBeHidden();
     const picker = page.getByRole('combobox', {name: 'Lingua'});
     await picker.click();

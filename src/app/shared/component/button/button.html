@@ -1,15 +1,15 @@
 @if (appearance() === 'outlined') {
   <button mat-stroked-button type="button" [disabled]="disabled()" (click)="clicked.emit()">
-    @if (icon(); as name) {
+    <span class="button-content">@if (icon(); as name) {
       <bhw-icon [name]="name" />
     }
-    {{ label() }}
+    {{ label() }}</span>
   </button>
 } @else {
   <button mat-flat-button type="button" [disabled]="disabled()" (click)="clicked.emit()">
-    @if (icon(); as name) {
+    <span class="button-content">@if (icon(); as name) {
       <bhw-icon [name]="name" />
     }
-    {{ label() }}
+    {{ label() }}</span>
   </button>
 }

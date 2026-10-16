@@ -201,3 +201,24 @@ h2 { margin: 0; font-size: 1rem; font-weight: 500; }
   .hero-description { font-size: 0.9rem; }
   .output-section { padding: 1.25rem; }
 }
+
+.selection-toolbar { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
+details { flex: 1; min-width: 0; padding: 0.75rem; border: 1px solid $border; border-radius: 0.75rem; }
+summary { cursor: pointer; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.selected-files { display: grid; gap: 0.75rem; margin-block: 1rem; }
+.selected-file { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 15rem); align-items: center; gap: 1rem; padding: 1rem; border: 1px solid $border; border-radius: 1rem; }
+.selected-file .actions { grid-column: 1 / -1; }
+.file-metadata h3 { overflow-wrap: anywhere; margin: 0; font-size: 0.95rem; }
+.file-metadata p, .metadata { color: $muted; font-size: 0.8rem; }
+.reference-panel { padding: 1rem; border: 1px solid $border; border-radius: 1rem; }
+.reference-panel li, .diagnostics p, .result-panel li { overflow-wrap: anywhere; }
+.diagnostics { margin-block: 1rem; }
+.diagnostics .error { color: #ffb4ab; }
+.diagnostics a { display: inline-block; padding: 1rem; }
+.output-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(6rem, 10rem); gap: 1rem; margin-block: 1rem; }
+.result-panel ul { padding-left: 1.2rem; color: $muted; line-height: 1.8; }
+.drop-overlay { position: fixed; inset: 1rem; z-index: 100; display: grid; place-items: center; padding: 2rem; border: 2px dashed $accent; border-radius: 1.5rem; background: $background; text-align: center; pointer-events: none; }
+.format-list li { display: block; padding: 0; }
+@media (max-width: 35rem) { .selected-file, .output-controls { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 35rem) { .selection-toolbar details { flex-basis: 100%; } }

@@ -1,0 +1,4 @@
+<span class="field-label">{{ label() }}</span>
+<mat-select [aria-label]="label()" [disabled]="disabled()" [value]="value()" (selectionChange)="changed.emit($event.value)">
+  @for (option of options(); track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+</mat-select>

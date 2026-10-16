@@ -2,7 +2,7 @@
 
 A browser-only polyglot generator inspired by [Beheader](https://github.com/p2r3/beheader). This is an independent project.
 
-**Status: Milestone 7 — standalone HTML and advanced payloads.** The processing API accepts MP3, supported PCM WAV, Ogg Vorbis/Opus, and compatible AAC/MP4 audio in its shared media slot. It retains all 26 subsets of two or more families: image, media, UTF-8 HTML, supported classic PDF, and ZIP archives. Chromium/Firefox audio flows pass; the reviewed Windows WebKit runner gap and pending real Safari verification are documented in [Milestone 6](MILESTONE-6.md). The responsive English/Italian interface still disables selection/generation until its generator-experience milestone. There are no in-app content previews.
+**Status: Milestone 8 — complete generator experience.** The processing API accepts MP3, supported PCM WAV, Ogg Vorbis/Opus, and compatible AAC/MP4 audio in its shared media slot. It retains all 26 subsets of two or more families: image, media, UTF-8 HTML, supported classic PDF, and ZIP archives. Chromium/Firefox audio flows pass; the reviewed Windows WebKit runner gap and pending real Safari verification are documented in [Milestone 6](MILESTONE-6.md). The responsive English/Italian interface now supports file selection, role correction, planning, generation, cancellation, examples, and extension-specific downloads. There are no in-app content previews.
 
 ## Requirements
 
@@ -85,9 +85,9 @@ Archives use pinned zip.js with a custom seekable reader. The EOCD is checked be
 
 The shared availability model derives from the verified compatibility matrix, occupied roles, ambiguity, resource limits, and implemented conversions. NgRx selectors recompute it whenever inspected selection metadata changes, including removal, replacement, reassignment, and archive reordering. Separate Audio and Video badges retain one shared media slot; a video can still include its own soundtrack. Six badges appear in rows of six, three, or two as space allows.
 
-Unavailable badges are gray and carry translated accessible explanations. Audio conversion is implemented; selecting audio or video occupies the shared media slot and disables further additions to either kind. Removing a conflicting input restores availability; the shared model permits multiple archives. Removal/replacement controls remain a requirement for the generator experience, independent of whether additions to an occupied slot are disabled.
+Unavailable badges are gray and carry translated accessible explanations. Audio conversion is implemented; selecting audio or video occupies the shared media slot and disables further additions to either kind. Removing a conflicting input restores availability; the shared model permits multiple archives. Removal/replacement controls remain enabled when additions to an occupied slot are disabled.
 
-The exported accept-filter selector excludes unavailable types and is ready for the future Choose files control. In Milestone 8, picker and drop controls must use this same model and authoritative inspection/planning. Operating-system filters can be bypassed, and extensions/MIME types alone do not prove compatibility. State/core tests cover availability transitions, audio/video exclusion, re-enabling after removal, multiple archives, and rejection of duplicate roles outside the picker filter. File selection remains disabled in the current shell.
+The exported accept-filter selector excludes unavailable types and is ready for the future Choose files control. The picker and drop controls use this same model and authoritative inspection/planning. Operating-system filters can be bypassed, and extensions/MIME types alone do not prove compatibility. State/core tests cover availability transitions, audio/video exclusion, re-enabling after removal, multiple archives, and rejection of duplicate roles outside the picker filter. The live picker and page-wide drop use this model and authoritative inspection. Selected files are removable, replaceable, reassignable, and reorderable.
 
 ## Static output
 
@@ -116,3 +116,5 @@ Asset bundling, full generator controls, offline caching, deployment automation,
 GPL-3.0-only. See `LICENSE` and [attribution](NOTICE.md).
 
 Milestone 7 adds four processing tests and two Chromium flows (106 unit tests and 68 Chromium flows total). Run `python scripts/verify-advanced-fixtures.py` after the full suite to validate the advanced all-family artifact independently. See [Milestone 7](MILESTONE-7.md).
+
+[Milestone 8](MILESTONE-8.md) connects the full generator through NgRx Store/Effects and a separate runtime file owner. The current suite contains 110 unit tests and 76 Chromium flows, plus the retained audio matrix. Diagnostic downloads exclude file names, input IDs, reference paths/URLs and contents; issue links are short and user initiated. Output name/extension preferences are remembered, while input selection and results are ephemeral.

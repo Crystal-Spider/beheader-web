@@ -12,7 +12,7 @@ import {Icon} from '../icon/icon';
   templateUrl: './button.html',
   styleUrl: './button.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {'[class.block]': 'block()'}
+  host: {'[class.block]': 'block()', '[class.compact]': 'compact()'}
 })
 export class Button {
   /**
@@ -44,6 +44,8 @@ export class Button {
    * @type {InputSignal<boolean>}
    */
   public readonly block = input(false);
+  /** @type {InputSignal<boolean>} */
+  public readonly compact = input(false);
 
   /**
    * Native click propagated only by the enabled button.

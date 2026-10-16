@@ -20,10 +20,9 @@ test('boots the production shell beneath the GitHub Pages project path', async({
 
   await expect(page).toHaveTitle('Beheader Web');
   await expect(page.getByRole('heading', {name: 'One file. Many possibilities.'})).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('File selection and generation are not available yet.');
   await expect(page.locator('bhw-root')).toHaveAttribute('ng-version', /^22\./);
   await expect(page.getByRole('link', {name: 'Beheader', exact: true})).toHaveAttribute('href', 'https://github.com/p2r3/beheader');
-  await expect(page.getByRole('button', {name: 'Choose files', exact: true})).toBeDisabled();
+  await expect(page.getByRole('button', {name: 'Choose files', exact: true})).toBeEnabled();
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeDisabled();
 
   const assetUrls = await page.locator('script[src]').evaluateAll(scripts => scripts.map(script => script.getAttribute('src')));

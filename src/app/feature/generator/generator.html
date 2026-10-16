@@ -14,10 +14,8 @@
         <p class="privacy"><bhw-icon name="privacy" />{{ t('hero.privacy') }}</p>
       </section>
 
-      <p class="development-note" role="status">
-        <span class="status-label">{{ t('generator.status') }}</span>
-        <span>{{ t('generator.notice') }}</span>
-      </p>
+      @if (dragging()) { <div aria-hidden="true" class="drop-overlay">{{ t('ui.drop') }}</div> }
+      <input #picker data-testid="file-picker" hidden tabindex="-1" type="file" [attr.accept]="pickerAccept || accepted()" [attr.aria-label]="t('generator.choose')" [multiple]="true" (change)="picked(picker)">
 
       <section aria-labelledby="files-title" class="files-section">
         <div class="section-heading">
@@ -28,15 +26,15 @@
           <bhw-icon class="upload-icon" name="upload" />
           <div>
             <h3>{{ t('generator.emptyTitle') }}</h3>
-            <p>{{ t('generator.emptyDescription') }}</p>
+            <p>{{ t('ui.drop') }}</p>
           </div>
-          <bhw-button appearance="outlined" [disabled]="true" [label]="t('generator.choose')" />
+          <bhw-button appearance="outlined" [disabled]="job().busy || !accepted()" [label]="t('generator.choose')" (clicked)="choose(picker)" />
         </div>
 
         <ul class="format-list" [attr.aria-label]="t('generator.formatsLabel')">
           @for (input of availability(); track input.kind) {
             <li [attr.aria-disabled]="!input.enabled" [attr.title]="input.reason ? t('availability.' + input.reason) : null" [class.unavailable]="!input.enabled">
-              <bhw-icon [name]="input.kind" /><span>{{ t('generator.' + input.kind) }}</span>
+              <bhw-button appearance="outlined" [block]="true" [compact]="true" [disabled]="job().busy || !input.enabled" [icon]="input.kind" [label]="t('generator.' + input.kind)" (clicked)="choose(picker, input)" />
               @if (input.reason) {
                 <span class="visually-hidden">{{ t('availability.' + input.reason) }}</span>
               }
@@ -44,9 +42,67 @@
           }
         </ul>
 
+        <div class="selection-toolbar">
+          <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.example')" (clicked)="example()" />
+          <details>
+            <summary>{{ t('ui.advanced') }}</summary>
+            <p>{{ t('ui.auxiliaryHint') }}</p>
+            <div class="actions">
+              @for (role of auxiliaryRoles; track role) {
+                <bhw-button appearance="outlined" [disabled]="!auxiliaryEnabled(role)" [label]="t('role.' + role)" (clicked)="choose(picker, role)" />
+              }
+            </div>
+          </details>
+        </div>
+        <div class="selected-files" [attr.aria-label]="t('ui.selected')">
+          @for (input of inputs(); track input.id; let index = $index) {
+            <article class="selected-file" [attr.aria-label]="input.name">
+              <div class="file-metadata"><h3>{{ input.name }}</h3><p>{{ size(input.size) }} · {{ t('role.' + (input.role || 'auto')) }}</p></div>
+              <bhw-choice [disabled]="job().busy" [label]="t('ui.role')" [options]="roles()" [value]="session.role(input.id)" (changed)="session.assign(input.id, $event)" />
+              <div class="actions">
+                <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.replace')" (clicked)="choose(picker, undefined, input.id)" />
+                <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.remove')" (clicked)="session.remove(input.id)" />
+                <bhw-button appearance="outlined" [disabled]="job().busy || index === 0" [label]="t('ui.up')" (clicked)="session.move(input.id, -1)" />
+                <bhw-button appearance="outlined" [disabled]="job().busy || index === inputs().length - 1" [label]="t('ui.down')" (clicked)="session.move(input.id, 1)" />
+              </div>
+            </article>
+          }
+        </div>
+        @for (input of inputs(); track input.id) {
+          @if (input.role === 'html') {
+            <bhw-text-field [disabled]="job().busy" [label]="t('ui.htmlPath')" [value]="session.options.htmlPath || input.name" (changed)="path($event)" />
+          }
+        }
+        @if (job().plan?.references?.length) {
+          <div class="reference-panel">
+            <p>{{ t('ui.references') }}</p>
+            <ul>@for (reference of job().plan?.references; track $index) { <li><code>{{ reference.reference }}</code> · {{ reference.from }} · {{ t('reference.' + reference.reason) }}</li> }</ul>
+            <mat-checkbox [checked]="!!session.options.allowUnresolved" [disabled]="job().busy" (change)="allow($event.checked)">{{ t('ui.allowReferences') }}</mat-checkbox>
+          </div>
+        }
+        @if (job().plan?.collisions?.length) {
+          <p>{{ t('ui.collisions') }}</p>
+          <ul>@for (collision of job().plan?.collisions; track $index) { <li><code>{{ collision.path }}</code></li> }</ul>
+        }
+        @for (input of inputs(); track input.id) { @if (input.role === 'extra-header') { <p class="metadata">{{ t('ui.headerSpace') }}: {{ job().plan?.headerSpace }} B</p> } }
+        <div aria-live="polite" class="diagnostics">
+          @for (diagnostic of job().diagnostics; track $index) {
+            <p [class.error]="diagnostic.severity === 'error'"><code>{{ diagnostic.code }}</code> · {{ t('diagnostic.' + diagnostic.code) }}</p>
+          }
+          @if (job().diagnostics.length) { <bhw-button appearance="outlined" [label]="t('ui.logs')" (clicked)="logs()" /> }
+          @if (unexpected()) { <a rel="noopener noreferrer" target="_blank" [href]="issue()">{{ t('ui.issue') }}</a> }
+        </div>
         <div class="combine-area">
           <p>{{ t('generator.selectionHint') }}</p>
-          <bhw-button icon="magic" [block]="true" [disabled]="true" [label]="t('generator.combine')" />
+          @if (job().busy) {
+            <div aria-live="polite" role="status">
+              <p>{{ t('stage.' + (job().progress?.stage || 'plan')) }}</p>
+              <mat-progress-bar [mode]="job().progress?.total ? 'determinate' : 'indeterminate'" [value]="100 * (job().progress?.completed || 0) / (job().progress?.total || 1)" />
+              <p>{{ progressLabel() }}</p>
+            </div>
+            <bhw-button appearance="outlined" [label]="t('ui.cancel')" (clicked)="cancel()" />
+          }
+          <bhw-button icon="magic" [block]="true" [disabled]="job().busy || !job().plan?.ready" [label]="t('generator.combine')" (clicked)="generate()" />
         </div>
       </section>
 
@@ -55,12 +111,25 @@
           <h2 id="output-title">{{ t('generator.outputTitle') }}</h2>
           <span aria-hidden="true" class="section-number">02</span>
         </div>
+        @if (job().artifact; as artifact) {
+          <div aria-live="polite" class="result-panel">
+            <p>{{ t('ui.ready') }} · {{ size(artifact.size) }}</p>
+            <div class="output-controls">
+              <bhw-text-field [disabled]="job().busy" [label]="t('ui.filename')" [value]="name()" (changed)="remember('name', $event)" />
+              <bhw-choice [disabled]="job().busy" [label]="t('ui.extension')" [options]="variants()" [value]="selectedExtension()" (changed)="remember('extension', $event)" />
+            </div>
+            <bhw-button icon="download" [disabled]="job().busy" [label]="t('ui.download')" (clicked)="download()" />
+            <ul>@for (interpretation of job().interpretations; track interpretation.family) { <li>{{ t('open.' + interpretation.family) }} ({{ interpretation.extensions.join(', ') }})</li> }</ul>
+            <p class="metadata">{{ t('ui.sameBytes') }}</p>
+          </div>
+        } @else {
         <div class="output-placeholder">
           <bhw-icon class="download-icon" name="download" />
           <h3>{{ t('generator.outputEmptyTitle') }}</h3>
           <p>{{ t('generator.outputEmptyDescription') }}</p>
           <span class="output-hint">{{ t('generator.outputHint') }}</span>
         </div>
+        }
       </section>
     </main>
 

@@ -1,0 +1,4 @@
+<label>
+  <span>{{ label() }}</span>
+  <input #field matInput maxlength="1024" [disabled]="disabled()" [value]="value()" (change)="changed.emit(field.value)">
+</label>
