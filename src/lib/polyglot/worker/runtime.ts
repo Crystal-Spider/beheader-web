@@ -56,7 +56,7 @@ export class WorkerRuntime {
       if (request.operation === 'inspect') {
         result = {operation: 'inspect', inspection};
       } else {
-        const prepared = await prepareComposition(inspection, sources, context);
+        const prepared = await prepareComposition(inspection, sources, context, request.options);
         if (request.operation === 'generate') {
           if (!prepared.plan.ready) {
             const diagnostic = prepared.plan.diagnostics.find(diagnostic => diagnostic.severity === 'error');

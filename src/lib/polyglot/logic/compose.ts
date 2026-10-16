@@ -1,4 +1,4 @@
-import {CompositionPlan, FormatFamily, InputSource, Inspection, ProcessingContext} from '../model/contract';
+import {CompositionOptions, CompositionPlan, InputSource, Inspection, ProcessingContext} from '../model/contract';
 import {BlobInput} from '../io/blob-input';
 import {ImageInfo, inspectImage} from '../format/image';
 import {inspectHtml} from '../format/html';
@@ -6,6 +6,7 @@ import {inspectMp4, Mp4Info} from '../format/mp4';
 import {inspectPdf, PdfInfo} from '../format/pdf';
 import {ArchiveInfo, inspectArchive, mergeArchives} from '../format/archive';
 import {AudioInfo, inspectAudio} from '../format/audio';
+import {bundleHtml} from '../format/html-bundle';
 import {checkCancelled, diagnose, ProcessingError} from './diagnostic';
 import {familyMask, FORMAT_FAMILIES, VERIFIED_COMBINATIONS} from './compatibility';
 
@@ -17,6 +18,8 @@ export interface PreparedComposition {
   readonly html?: {readonly source: InputSource; readonly bom: number};
   readonly pdf?: {readonly source: InputSource; readonly info: PdfInfo};
   readonly archives?: readonly ArchiveInfo[];
+  readonly appendables?: readonly InputSource[];
+  readonly header?: InputSource;
 }
 
 /**
@@ -40,9 +43,6 @@ export function planComposition(inspection: Inspection, context: ProcessingConte
   }
   if (families.length < 2) { diagnostics.push({code: 'MINIMUM_FAMILIES', severity: 'error'}); }
   if (families.length >= 2 && !VERIFIED_COMBINATIONS.includes(familyMask(families))) { diagnostics.push({code: 'COMBINATION_UNSUPPORTED', severity: 'error'}); }
-  if (roles.some(role => role !== null && !FORMAT_FAMILIES.includes(role as FormatFamily))) {
-    diagnostics.push({code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
-  }
   return {inputs: inspection.inputs, diagnostics, families, interpretations: [], ready: false};
 }
 
@@ -51,9 +51,10 @@ export function planComposition(inspection: Inspection, context: ProcessingConte
  * @param {Inspection} inspection Bounded detection and role metadata.
  * @param {readonly InputSource[]} sources Runtime readers corresponding to inspection IDs.
  * @param {ProcessingContext} context Cancellation and progress.
+ * @param {CompositionOptions} options Explicit HTML reference policy.
  * @returns {Promise<PreparedComposition>} Ready metadata plus runtime-only relocation data.
  */
-export async function prepareComposition(inspection: Inspection, sources: readonly InputSource[], context: ProcessingContext): Promise<PreparedComposition> {
+export async function prepareComposition(inspection: Inspection, sources: readonly InputSource[], context: ProcessingContext, options: CompositionOptions = {}): Promise<PreparedComposition> {
   const initial = planComposition(inspection, context);
   if (initial.diagnostics.some(diagnostic => diagnostic.severity === 'error')) { return {plan: initial}; }
   const diagnostics = [...initial.diagnostics];
@@ -62,6 +63,9 @@ export async function prepareComposition(inspection: Inspection, sources: readon
   let html: PreparedComposition['html'];
   let pdf: PreparedComposition['pdf'];
   const archives: ArchiveInfo[] = [];
+  let assets: ArchiveInfo | undefined;
+  const appendables: InputSource[] = [];
+  let header: InputSource | undefined;
   for (const [index, description] of inspection.inputs.entries()) {
     const source = sources.find(source => source.id === description.id);
     if (!source || source.reader.size !== description.size) { throw new ProcessingError({code: 'INVALID_REQUEST', severity: 'error'}); }
@@ -79,6 +83,12 @@ export async function prepareComposition(inspection: Inspection, sources: readon
         pdf = {source, info: await inspectPdf(source.reader, context)};
       } else if (description.role === 'archive') {
         archives.push(await inspectArchive(source, context));
+      } else if (description.role === 'html-assets') {
+        assets = await inspectArchive(source, context);
+      } else if (description.role === 'appendable') {
+        appendables.push(source);
+      } else if (description.role === 'extra-header') {
+        header = source;
       }
     } catch(error) {
       const diagnostic = diagnose(error);
@@ -88,6 +98,23 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     context.progress({stage: 'plan', completed: index + 1, total: inspection.inputs.length, unit: 'inputs'});
   }
   checkCancelled(context.signal);
+  let references: CompositionPlan['references'] = [];
+  if (html) {
+    try {
+      const bundled = await bundleHtml(html.source, assets, options, context);
+      references = bundled.references;
+      html = {source: {...html.source, reader: new BlobInput(bundled.blob)}, bom: 0};
+      if (references.length) { diagnostics.push({code: 'HTML_UNRESOLVED', severity: options.allowUnresolved ? 'warning' : 'error', details: {count: references.length}}); }
+    } catch(error) { diagnostics.push(diagnose(error, 'HTML_ASSET_INVALID')); }
+  }
+  const headerSpace = 256 - headerPayloadOffset(!!html, pdf?.info);
+  if (header) {
+    if (header.reader.size > headerSpace) { diagnostics.push({code: 'HEADER_SPACE', severity: 'error', details: {available: headerSpace}}); }
+    else if (html) {
+      const bytes = await header.reader.read(0, header.reader.size, context.signal);
+      if (/--!?>|<!--/.test(new TextDecoder().decode(bytes))) { diagnostics.push({code: 'HEADER_CONTENT', severity: 'error'}); }
+    }
+  }
   let collisions: CompositionPlan['collisions'] = [];
   try {
     collisions = mergeArchives(archives).collisions;
@@ -102,7 +129,18 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     ...(archives.length ? [{family: 'archive' as const, extensions: ['zip']}] : [])
   ] : [];
   return {
-    plan: {...initial, diagnostics, interpretations, ready, collisions, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
-    ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives
+    plan: {...initial, diagnostics, interpretations, ready, collisions, references, headerSpace, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
+    ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives, appendables, ...(header ? {header} : {})
   };
+}
+
+/**
+ * Calculates free header space after the actual selected bootstrap/PDF framing.
+ * @param {boolean} html Whether HTML requires a bootstrap comment.
+ * @param {PdfInfo | undefined} pdf Optional classic PDF object framing.
+ * @returns {number} First free byte within the fixed 256-byte header.
+ */
+export function headerPayloadOffset(html: boolean, pdf?: PdfInfo): number {
+  if (pdf) { return (html ? 80 : 22) + new TextEncoder().encode(`\n${pdf.header}${pdf.size} 0 obj\n<</Length `).length + 10 + new TextEncoder().encode('>>\nstream\n').length; }
+  return html ? 22 + new TextEncoder().encode('><meta charset=utf-8><style>body{font-size:0}</style><!--').length : 22;
 }

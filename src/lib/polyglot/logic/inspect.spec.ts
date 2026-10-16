@@ -100,7 +100,7 @@ describe('inspection and role planning', () => {
     ], context());
     const plan = planComposition(result, context());
     expect(plan.families).toEqual(['pdf']);
-    expect(plan.diagnostics.map(item => item.code)).toEqual(expect.arrayContaining(['MINIMUM_FAMILIES', 'MISSING_HTML', 'IMPLEMENTATION_UNAVAILABLE']));
+    expect(plan.diagnostics.map(item => item.code)).toEqual(expect.arrayContaining(['MINIMUM_FAMILIES', 'MISSING_HTML']));
   });
 
   it('cancels before reading and rejects duplicate IDs without reading', async() => {

@@ -13,7 +13,7 @@ import {appendArchives} from '../format/archive';
 import {normalizeAudio} from '../format/audio';
 import {inspectMp4} from '../format/mp4';
 import {checkCancelled, ProcessingError} from './diagnostic';
-import {PreparedComposition} from './compose';
+import {headerPayloadOffset, PreparedComposition} from './compose';
 
 /** Canonical brands avoid arbitrary input ftyp bytes interfering with the HTML comment. */
 const FTYP = new Uint8Array([
@@ -57,7 +57,8 @@ export function imageContainerHeader(width: number, height: number, pngSize: num
  */
 export async function generateResult(prepared: PreparedComposition, storage: TemporaryStorage, context: ProcessingContext): Promise<ArtifactReference> {
   checkCancelled(context.signal);
-  const {plan, image, html, pdf, archives = []} = prepared;
+  const {plan, image, html, pdf, archives = [], appendables = [], header: extraHeader} = prepared;
+  const extensions = !!pdf || archives.length > 0 || appendables.length > 0;
   if (!plan.ready) {
     throw new ProcessingError(plan.diagnostics.find(diagnostic => diagnostic.severity === 'error') ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
   }
@@ -77,7 +78,7 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   const prefixSize = pngOffset + (png?.size ?? 0);
   const delta = prefixSize - (media?.info.ftyp.size ?? 0);
   const baseSize = prefixSize + (media ? media.source.reader.size - media.info.ftyp.size : 0);
-  const extensionStart = baseSize + (media && (pdf || archives.length) ? 8 : 0);
+  const extensionStart = baseSize + (media && extensions ? 8 : 0) + appendables.reduce((sum, source) => sum + source.reader.size, 0);
   const terminator = pdf ? encode('\nendstream\nendobj\n') : new Uint8Array(0);
   const pdfOffset = extensionStart + terminator.length;
   const pdfEnd = pdf ? encode(`${pdfOffset + pdf.info.xref}\n%%EOF\n`) : new Uint8Array(0);
@@ -115,6 +116,7 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
     header.set(encode(String(extensionStart - streamStart).padStart(10, '0')), position + start.length);
     header.set(end, position + start.length + 10);
   }
+  if (extraHeader) { header.set(await extraHeader.reader.read(0, extraHeader.reader.size, context.signal), headerPayloadOffset(!!html, pdf?.info)); }
   await append(header);
   const box = (size: number): Uint8Array<ArrayBuffer> => {
     const bytes = new Uint8Array(8);
@@ -130,7 +132,8 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   }
   if (png) { await copy(png, 0, png.size); }
   if (media) { await copy(media.source.reader, media.info.ftyp.size, media.source.reader.size - media.info.ftyp.size); }
-  if (media && (pdf || archives.length)) { await append(box(8)); }
+  if (media && extensions) { await append(box(8)); }
+  for (const source of appendables) { await copy(source.reader, 0, source.reader.size); }
   if (pdf) {
     await append(terminator);
     await copy(pdf.source.reader, 0, pdf.info.startxref);
@@ -175,6 +178,6 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   if (writer.size !== outputSize) { invalid('IO_FAILURE'); }
   if (audioArtifact) { await storage.discard(audioArtifact); }
   if (archives.length) { await appendArchives(archives, writer, storage, context, pdfComment); }
-  if (media && (pdf || archives.length)) { await writer.patch(baseSize, box(writer.size - baseSize), context.signal); }
+  if (media && extensions) { await writer.patch(baseSize, box(writer.size - baseSize), context.signal); }
   return writer.finish(storage.jobId, id, 'application/octet-stream', context.signal);
 }

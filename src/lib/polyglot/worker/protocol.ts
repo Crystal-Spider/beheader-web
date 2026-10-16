@@ -23,6 +23,10 @@ export function isWorkerRequest(value: unknown): value is WorkerRequest {
   const request = value['request'];
   if (value['type'] !== 'run' || !isRecord(request) || !['inspect', 'plan', 'generate'].includes(String(request['operation']))) { return false; }
   const inputs: unknown = request['inputs'];
+  const options = request['options'];
+  if (options !== undefined && (!isRecord(options)
+    || options['htmlPath'] !== undefined && (typeof options['htmlPath'] !== 'string' || options['htmlPath'].length > 1024)
+    || options['allowUnresolved'] !== undefined && typeof options['allowUnresolved'] !== 'boolean')) { return false; }
   return Array.isArray(inputs) && inputs.every((input: unknown): input is FileInput => isRecord(input)
     && typeof input['id'] === 'string' && input['id'].length > 0 && input['id'].length <= 128
     && input['file'] instanceof File

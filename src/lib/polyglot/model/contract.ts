@@ -20,7 +20,8 @@ export type DiagnosticCode =
   | 'ARCHIVE_INVALID' | 'ARCHIVE_UNSUPPORTED' | 'ARCHIVE_ENCRYPTED' | 'ARCHIVE_SPLIT'
   | 'ARCHIVE_EXPANDED_LIMIT' | 'ARCHIVE_PATH' | 'ARCHIVE_COLLISION' | 'COMBINATION_UNSUPPORTED'
   | 'AUDIO_INVALID' | 'AUDIO_CODEC' | 'AUDIO_TRACKS' | 'AUDIO_CHANNELS'
-  | 'AUDIO_DECODE_UNAVAILABLE' | 'AUDIO_CONVERSION_FAILED';
+  | 'AUDIO_DECODE_UNAVAILABLE' | 'AUDIO_CONVERSION_FAILED'
+  | 'HTML_UNRESOLVED' | 'HTML_ASSET_INVALID' | 'HEADER_SPACE' | 'HEADER_CONTENT';
 
 /** Contains no translated prose, raw errors, file names, or file contents. */
 export interface Diagnostic {
@@ -87,6 +88,21 @@ export interface CompositionPlan extends Inspection {
   readonly ready: boolean;
   readonly archives?: readonly ArchiveDescription[];
   readonly collisions?: readonly ArchiveCollision[];
+  readonly references?: readonly HtmlReference[];
+  readonly headerSpace?: number;
+}
+
+/** Display-only reference details; exclude paths and URLs from diagnostic exports. */
+export interface HtmlReference {
+  readonly reference: string;
+  readonly from: string;
+  readonly reason: 'missing' | 'remote' | 'cycle' | 'unsupported';
+}
+
+/** Explicit decisions shared by planning and generation, without persisted file selection. */
+export interface CompositionOptions {
+  readonly htmlPath?: string;
+  readonly allowUnresolved?: boolean;
 }
 
 /** Ordered archive metadata; payloads remain outside state. */
@@ -129,6 +145,7 @@ export interface ProcessingContext {
 export interface OperationRequest {
   readonly operation: 'inspect' | 'plan' | 'generate';
   readonly inputs: readonly FileInput[];
+  readonly options?: CompositionOptions;
 }
 
 /** Operation-specific results are serializable, including generated artifact references. */
