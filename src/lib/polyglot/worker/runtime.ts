@@ -3,6 +3,7 @@ import {BlobInput} from '../io/blob-input';
 import {prepareComposition} from '../logic/compose';
 import {generateResult} from '../logic/generate';
 import {TemporaryStorage} from '../io/temporary-storage';
+import {checkStorageCapacity} from '../io/resource-budget';
 import {diagnose} from '../logic/diagnostic';
 import {inspectInputs} from '../logic/inspect';
 import {isRecord, isWorkerRequest} from './protocol';
@@ -63,6 +64,7 @@ export class WorkerRuntime {
             this.send({type: 'failed', jobId, diagnostic: diagnostic ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'}});
             return;
           }
+          await checkStorageCapacity(prepared.plan.resources?.minimumBytes ?? 0);
           storage = await TemporaryStorage.create(jobId);
           const artifact = await generateResult(prepared, storage, context);
           result = {operation: 'generate', artifact, interpretations: prepared.plan.interpretations};

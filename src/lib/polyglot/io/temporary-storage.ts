@@ -1,6 +1,7 @@
 import {ArtifactReference} from '../model/contract';
 import {diagnose, ProcessingError} from '../logic/diagnostic';
 import {OutputWriter} from './output-writer';
+import {ResourceBudget} from './resource-budget';
 
 /** Application-owned OPFS namespace; never remove the origin root or another app's data. */
 export const STORAGE_DIRECTORY = 'beheader-web-polyglot-v1';
@@ -81,6 +82,8 @@ export class TemporaryStorage {
   private disposed = false;
   /** @type {boolean} */
   private busy = false;
+  /** @type {ResourceBudget} */
+  private readonly budget = new ResourceBudget();
 
   /**
    * @param {string} jobId Owning UUID.
@@ -121,7 +124,7 @@ export class TemporaryStorage {
       const file = await this.directory.getFileHandle(id, {create: true});
       const stream = await file.createWritable();
       const writer = new OutputWriter({
-        write: async(offset, bytes) => { await stream.write({type: 'write', position: offset, data: bytes}); },
+        write: async(offset, bytes) => { this.budget.reserve(id, offset + bytes.length); await stream.write({type: 'write', position: offset, data: bytes}); },
         close: async() => { await stream.close(); },
         abort: async() => { await stream.abort(); }
       }, limit);
@@ -157,7 +160,7 @@ export class TemporaryStorage {
     this.requireOpen();
     validateStorageId(artifact.id);
     if (artifact.jobId !== this.jobId) { throw new ProcessingError({code: 'INVALID_REQUEST', severity: 'error'}); }
-    try { await this.directory.removeEntry(artifact.id); }
+    try { await this.directory.removeEntry(artifact.id); this.budget.release(artifact.id); }
     catch(error) { throw new ProcessingError(diagnose(error, 'CLEANUP_FAILED')); }
   }
 

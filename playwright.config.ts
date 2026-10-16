@@ -6,6 +6,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: 'list',
   use: {
+    serviceWorkers: 'block',
     baseURL: 'http://127.0.0.1:4173/beheader-web/',
     trace: 'retain-on-failure'
   },

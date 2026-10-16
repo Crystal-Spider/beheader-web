@@ -4,6 +4,7 @@ import {provideRouter} from '@angular/router';
 import {provideEffects} from '@ngrx/effects';
 import {provideStore} from '@ngrx/store';
 import {provideTransloco} from '@jsverse/transloco';
+import {provideServiceWorker} from '@angular/service-worker';
 
 import {LANGUAGES} from '~bhw/core/model/language';
 import {Translations} from '~bhw/core/service/translations';
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideStore({[selectionFeature.name]: selectionFeature.reducer, [jobFeature.name]: jobFeature.reducer}),
     provideEffects(JobEffects),
+    provideServiceWorker('ngsw-worker.js', {enabled: !isDevMode(), registrationStrategy: 'registerImmediately'}),
     provideTransloco({
       config: {
         availableLangs: LANGUAGES.map(language => language.code),

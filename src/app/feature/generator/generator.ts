@@ -10,6 +10,7 @@ import {TextField} from '~bhw/shared/component/text-field/text-field';
 import {Icon} from '~bhw/shared/component/icon/icon';
 import {LanguagePicker} from '~bhw/shared/component/language-picker/language-picker';
 import {Processing} from '~bhw/core/service/processing';
+import {Offline} from '~bhw/core/service/offline';
 import {InputRole} from '~bhw/polyglot/model/contract';
 import {InputAvailability} from '~bhw/polyglot/logic/availability';
 import {INPUT_ROLES} from '~bhw/polyglot/logic/inspect';
@@ -54,8 +55,9 @@ export class Generator {
    * @param {GeneratorSession} session Ephemeral file selection.
    * @param {Store} store Serializable state.
    * @param {TranslocoService} translations Runtime text.
+   * @param {Offline} offline Production caching and idle-only update gate.
    */
-  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService) {
+  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService, public readonly offline: Offline) {
     this.availability = store.selectSignal(selectionFeature.selectAvailability);
     this.accepted = store.selectSignal(selectionFeature.selectAcceptedTypes);
     this.inputs = store.selectSignal(selectionFeature.selectInputs);

@@ -20,7 +20,7 @@ for (const [image, media, withHtml] of [
   ['large-dimensions.png', 'video-tail-moov.mp4', true]
 ] as const) {
   test(`generates ${image} + ${media}${withHtml ? ' + UTF-8 HTML' : ''} with independent browser decoding`, async({page}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({image, media, imageBytes, mediaBytes, workerFile, withHtml}) => {
       const {WorkerClient, cleanupJob, resolveArtifact} = window.bhwHarness;
       const createFile = (name: string, bytes: number[]): File => new File([new Uint8Array(bytes)], name);
@@ -131,7 +131,7 @@ for (const [image, media, withHtml] of [
 
 for (const mode of ['cancel-during-output', 'image-decode-failure'] as const) {
   test(`cleans the actual generation workspace after ${mode} and allows a retry`, async({page}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({workerFile, imageBytes, mediaBytes, mode}) => {
       const {WorkerClient, cleanupJob, storageRoot, diagnose} = window.bhwHarness;
       let jobId = '';

@@ -7,3 +7,5 @@ e2e/fixture/*.m4a binary
 e2e/fixture/*.aac binary
 # Generated JavaScript includes an inline WASM string whose bytes must survive checkout unchanged.
 docs/*.js binary
+# Service-worker content hashes require every generated asset to survive checkout byte-for-byte.
+docs/** -text whitespace=cr-at-eol

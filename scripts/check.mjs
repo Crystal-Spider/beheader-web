@@ -28,3 +28,5 @@ for (const [name, entry, args] of checks) {
     process.exit(result.status ?? 1);
   }
 }
+
+await import('./verify-static-assets.mjs');

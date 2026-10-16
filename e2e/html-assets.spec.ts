@@ -14,7 +14,7 @@ test('bundles nested assets offline and retains all interpretations with ordered
     ['site/image.png', new Uint8Array(readFileSync('e2e/fixture/transparent.png'))]
   ] as const) { await zip.add(name, new Uint8ArrayReader(bytes)); }
   const files = ['transparent.png', 'video-aac.mp4', 'classic.pdf', 'first.zip'].map(name => ({name, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))}));
-  const worker = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+  const worker = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
   await page.goto('./');
   await page.addScriptTag({content: harness});
   const result = await page.evaluate(async({files, worker, assets}) => {

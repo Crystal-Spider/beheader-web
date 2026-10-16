@@ -9,6 +9,7 @@ import {AudioInfo, inspectAudio} from '../format/audio';
 import {bundleHtml} from '../format/html-bundle';
 import {checkCancelled, diagnose, ProcessingError} from './diagnostic';
 import {familyMask, FORMAT_FAMILIES, VERIFIED_COMBINATIONS} from './compatibility';
+import {LARGE_FILE_THRESHOLD} from '../io/resource-budget';
 
 /** Runtime preparation never enters state; only its plan metadata is serializable. */
 export interface PreparedComposition {
@@ -116,8 +117,11 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     }
   }
   let collisions: CompositionPlan['collisions'] = [];
+  let expanded = 0;
   try {
-    collisions = mergeArchives(archives).collisions;
+    const merged = mergeArchives(archives);
+    collisions = merged.collisions;
+    expanded = merged.winners.reduce((sum, winner) => sum + winner.entry.uncompressedSize, 0);
     if (collisions.length) { diagnostics.push({code: 'ARCHIVE_COLLISION', severity: 'warning', details: {count: collisions.length}}); }
   } catch(error) { diagnostics.push(diagnose(error)); }
   const ready = !diagnostics.some(diagnostic => diagnostic.severity === 'error');
@@ -128,8 +132,13 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     ...(pdf ? [{family: 'pdf' as const, extensions: ['pdf']}] : []),
     ...(archives.length ? [{family: 'archive' as const, extensions: ['zip']}] : [])
   ] : [];
+  const encodedMedia = media && 'info' in media ? media.source.reader.size - media.info.ftyp.size : 0;
+  const base = 256 + encodedMedia + (html?.source.reader.size ?? 0) + (pdf?.info.startxref ?? 0) + appendables.reduce((sum, source) => sum + source.reader.size, 0);
+  const audioBytes = media && 'audio' in media ? Math.ceil(media.audio.duration * 192000 / 8) : 0;
+  const temporaryBytes = base + expanded * 2 + audioBytes * 2 + (image ? image.info.width * image.info.height * 4 : 0) + 1024 * 1024;
+  const resources = {large: sources.some(source => source.reader.size > LARGE_FILE_THRESHOLD) || temporaryBytes > LARGE_FILE_THRESHOLD, temporaryBytes, minimumBytes: base + expanded};
   return {
-    plan: {...initial, diagnostics, interpretations, ready, collisions, references, headerSpace, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
+    plan: {...initial, diagnostics, interpretations, ready, collisions, references, headerSpace, resources, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
     ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives, appendables, ...(header ? {header} : {})
   };
 }

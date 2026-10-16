@@ -15,6 +15,10 @@
       </section>
 
       @if (dragging()) { <div aria-hidden="true" class="drop-overlay">{{ t('ui.drop') }}</div> }
+      @if (offline.ready()) { <p class="metadata" data-testid="offline-ready">{{ t('offline.ready') }}</p> }
+      @if (offline.update()) { <p>{{ t('offline.update') }}</p><bhw-button [disabled]="job().busy" [label]="t('offline.reload')" (clicked)="offline.apply()" /> }
+      @if (processing.storageDiagnostic(); as diagnostic) { <p class="metadata">{{ t('diagnostic.' + diagnostic.code) }}</p> }
+      @if (job().plan?.resources?.large) { <p class="metadata">{{ t('offline.large') }} {{ size(job().plan?.resources?.temporaryBytes || 0) }}</p> }
       <input #picker data-testid="file-picker" hidden tabindex="-1" type="file" [attr.accept]="pickerAccept || accepted()" [attr.aria-label]="t('generator.choose')" [multiple]="true" (change)="picked(picker)">
 
       <section aria-labelledby="files-title" class="files-section">

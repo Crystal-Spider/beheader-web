@@ -15,7 +15,7 @@ for (let mask = 1; mask < 32; mask++) {
   const selected = families.filter((_, index) => mask & (1 << index));
   if (selected.length < 2) { continue; }
   test(`validates the ${selected.join(' + ')} combination`, async({page, browser}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const inputs = selected.map(family => ({id: family, name: family === 'html' ? 'page.html' : fixtures[family], bytes: family === 'html'
       ? Array.from(new TextEncoder().encode('<!doctype html><html><head><meta charset="utf-8"><title>Città 🙂</title></head><body><h1 id="fixture">Città, 日本語, 🙂</h1><script>parent.postMessage({fixture:document.getElementById("fixture").textContent,charset:document.characterSet},"*")</script></body></html>'))
       : Array.from(readFileSync(`e2e/fixture/${fixtures[family]}`))}));
@@ -97,7 +97,7 @@ for (const [name, expected] of [
   ['unsupported-method.zip', 'ARCHIVE_UNSUPPORTED']
 ] as const) {
   test(`rejects ${name} and cleans generation storage`, async({page}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({name, expected, bytes, workerFile}) => {
       const {WorkerClient, cleanupJob, storageRoot, diagnose} = window.bhwHarness;
       let jobId = '';
@@ -122,7 +122,7 @@ for (const reverse of [false, true]) {
   test(`merges multiple archives in ${reverse ? 'reversed' : 'selected'} order with classic PDF subsections`, async({page}) => {
     const names = reverse ? ['second.zip', 'first.zip'] : ['first.zip', 'second.zip'];
     const files = ['subsections.pdf', ...names].map(name => ({name, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))}));
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({files, workerFile}) => {
       const {WorkerClient, cleanupJob, resolveArtifact} = window.bhwHarness;
       const client = new WorkerClient(() => new Worker(new URL(workerFile, document.baseURI), {type: 'module'}), cleanupJob);
@@ -145,7 +145,7 @@ for (const reverse of [false, true]) {
 
 for (const stage of ['extract', 'pack'] as const) {
   test(`cancels archive ${stage}, cleans its workspace, and permits retry`, async({page}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const bytes = Array.from(readFileSync('e2e/fixture/large-expanded.zip'));
     const result = await page.evaluate(async({workerFile, bytes, stage}) => {
       const {WorkerClient, cleanupJob, storageRoot, diagnose} = window.bhwHarness;

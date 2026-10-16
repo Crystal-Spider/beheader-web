@@ -18,7 +18,7 @@ for (const {name, allFamilies} of [
   test(`converts ${name}${allFamilies ? ' with all families' : ''} to playable AAC-LC without network processing`, async({page, browser, browserName}) => {
     const external: string[] = [];
     page.on('request', request => { if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') { external.push(request.url()); } });
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const extras = allFamilies ? ['transparent.png', 'classic.pdf', 'first.zip'].map((name, index) => ({id: `extra-${index}`, name, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))})) : [];
     const result = await page.evaluate(async({name, bytes, workerFile, extras}) => {
       const {WorkerClient, cleanupJob, resolveArtifact} = window.bhwHarness;
@@ -68,7 +68,7 @@ for (const {name, allFamilies} of [
 
 for (const stage of ['before-conversion', 'conversion', 'after-conversion'] as const) {
   test(`cancels ${stage}, cleans audio intermediates, and permits retry`, async({page}) => {
-    const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+    const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({bytes, workerFile, stage}) => {
       const {WorkerClient, cleanupJob, storageRoot, diagnose} = window.bhwHarness;
       let jobId = '';
@@ -93,7 +93,7 @@ for (const stage of ['before-conversion', 'conversion', 'after-conversion'] as c
 }
 
 test('rejects a malformed WAV and separate audio/video inputs outside picker filters', async({page}) => {
-  const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name))!;
+  const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
   const result = await page.evaluate(async({workerFile, corrupt, audio, video}) => {
     const {WorkerClient, cleanupJob} = window.bhwHarness;
     const client = new WorkerClient(() => new Worker(new URL(workerFile, document.baseURI), {type: 'module'}), cleanupJob);

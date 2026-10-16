@@ -170,5 +170,11 @@
     "AUDIO_CODEC": "Use H.264/AAC-LC in classic MP4, or supported MP3/PCM WAV/Ogg audio.",
     "AUDIO_TRACKS": "The audio is invalid or unsupported (tracks). Choose a compatible file; see the source compatibility notes.",
     "AUDIO_CHANNELS": "This AAC channel layout is unsupported. Use a supported explicit channel configuration."
+  },
+  "offline": {
+    "ready": "Ready to reopen offline",
+    "update": "An update is ready. Reloading clears selected files and results.",
+    "reload": "Reload application",
+    "large": "Large job: estimated temporary storage"
   }
 }

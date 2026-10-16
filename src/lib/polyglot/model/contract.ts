@@ -90,6 +90,7 @@ export interface CompositionPlan extends Inspection {
   readonly collisions?: readonly ArchiveCollision[];
   readonly references?: readonly HtmlReference[];
   readonly headerSpace?: number;
+  readonly resources?: {readonly large: boolean; readonly temporaryBytes: number; readonly minimumBytes: number};
 }
 
 /** Display-only reference details; exclude paths and URLs from diagnostic exports. */

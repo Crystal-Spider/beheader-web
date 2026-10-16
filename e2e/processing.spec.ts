@@ -20,7 +20,7 @@ test.beforeEach(async({page}) => {
 });
 
 test('uses the production worker for real File cloning, inspection, planning, cancellation, and retry', async({page}) => {
-  const workerFile = readdirSync('docs').find(name => /^worker-.*\.js$/.test(name));
+  const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name));
   expect(workerFile).toBeDefined();
   const result = await page.evaluate(async workerFile => {
     const {WorkerClient, cleanupJob, diagnose} = window.bhwHarness;
