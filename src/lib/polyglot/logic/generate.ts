@@ -10,6 +10,8 @@ import {TemporaryStorage} from '../io/temporary-storage';
 import {HTML_PREFIX, HTML_SUFFIX} from '../format/html';
 import {inspectImage, normalizeImage} from '../format/image';
 import {appendArchives} from '../format/archive';
+import {normalizeAudio} from '../format/audio';
+import {inspectMp4} from '../format/mp4';
 import {checkCancelled, ProcessingError} from './diagnostic';
 import {PreparedComposition} from './compose';
 
@@ -55,9 +57,16 @@ export function imageContainerHeader(width: number, height: number, pngSize: num
  */
 export async function generateResult(prepared: PreparedComposition, storage: TemporaryStorage, context: ProcessingContext): Promise<ArtifactReference> {
   checkCancelled(context.signal);
-  const {plan, image, media, html, pdf, archives = []} = prepared;
+  const {plan, image, html, pdf, archives = []} = prepared;
   if (!plan.ready) {
     throw new ProcessingError(plan.diagnostics.find(diagnostic => diagnostic.severity === 'error') ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
+  }
+  let media = prepared.media && 'info' in prepared.media ? prepared.media : undefined;
+  let audioArtifact: ArtifactReference | undefined;
+  if (prepared.media && 'audio' in prepared.media) {
+    const normalized = await normalizeAudio(prepared.media.source, prepared.media.audio, storage, context);
+    audioArtifact = normalized.artifact;
+    media = {source: normalized.source, info: await inspectMp4(normalized.source.reader, context)};
   }
   const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
   const png = image ? new BlobInput(await normalizeImage(image.input.blob, image.info, context)) : undefined;
@@ -164,6 +173,7 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
     }
   }
   if (writer.size !== outputSize) { invalid('IO_FAILURE'); }
+  if (audioArtifact) { await storage.discard(audioArtifact); }
   if (archives.length) { await appendArchives(archives, writer, storage, context, pdfComment); }
   if (media && (pdf || archives.length)) { await writer.patch(baseSize, box(writer.size - baseSize), context.signal); }
   return writer.finish(storage.jobId, id, 'application/octet-stream', context.signal);

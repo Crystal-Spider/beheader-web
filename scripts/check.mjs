@@ -9,7 +9,8 @@ const checks = [
   ['Tooling types', 'typescript/bin/tsc', ['--project', 'tsconfig.tools.json', '--noEmit']],
   ['Worker types', 'typescript/bin/tsc', ['--project', 'tsconfig.worker.json', '--noEmit']],
   ['Unit tests', 'vitest/vitest.mjs', ['run', '--passWithNoTests']],
-  ['Browser smoke', '@playwright/test/cli.js', ['test']],
+  ['Chromium flows', '@playwright/test/cli.js', ['test']],
+  ['Audio browser matrix', '@playwright/test/cli.js', ['test', '--config', 'playwright.audio.config.ts', '--workers=3']],
   ['Production build', '@angular/cli/bin/ng.js', ['build']]
 ];
 

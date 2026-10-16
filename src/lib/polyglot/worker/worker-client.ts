@@ -89,7 +89,9 @@ export class WorkerClient {
     job.worker.terminate();
     job.finishing = (async(): Promise<void> => {
       let terminal = outcome;
-      if (outcome instanceof ProcessingError && job.request.operation === 'generate') {
+      // Runtime reports unavailable storage only before allocation or after successful disposal.
+      // Retrying through the same unavailable API would mask that actionable failure as cleanup failure.
+      if (outcome instanceof ProcessingError && job.request.operation === 'generate' && outcome.diagnostic.code !== 'STORAGE_UNAVAILABLE') {
         try { await this.cleanup(job.id); }
         catch(error) { terminal = new ProcessingError(diagnose(error, 'CLEANUP_FAILED')); }
       }

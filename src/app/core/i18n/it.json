@@ -34,7 +34,7 @@
     "FORMAT_RESOURCE_LIMIT": "Rimuovi un file prima di aggiungerne un altro.",
     "COMBINATION_UNSUPPORTED": "La compatibilità di questa combinazione non è stata verificata.",
     "ROLE_CONFLICT": "Questo ruolo è già occupato. Rimuovi o sostituisci il file selezionato.",
-    "IMPLEMENTATION_UNAVAILABLE": "La conversione dei file audio non è ancora disponibile.",
+    "IMPLEMENTATION_UNAVAILABLE": "Questa funzionalità di input non è disponibile.",
     "INPUT_AMBIGUOUS": "Assegna prima un ruolo al file ambiguo.",
     "TOTAL_TOO_LARGE": "Rimuovi dei file per liberare spazio entro il limite totale."
   },

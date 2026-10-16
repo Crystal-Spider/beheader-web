@@ -36,7 +36,7 @@ const INPUT_KINDS: readonly {kind: InputKind; family: FormatFamily; accept: read
  * @param {InputCapabilities} capabilities Implemented input conversions, not user preferences.
  * @returns {readonly InputAvailability[]} Six stable badge/control descriptions with safe reason codes.
  */
-export function inputAvailability(inputs: readonly InputDescription[], capabilities: InputCapabilities = {audio: false}): readonly InputAvailability[] {
+export function inputAvailability(inputs: readonly InputDescription[], capabilities: InputCapabilities = {audio: true}): readonly InputAvailability[] {
   const total = inputs.reduce((sum, input) => sum + input.size, 0);
   const families = FORMAT_FAMILIES.filter(family => inputs.some(input => input.role === family));
   return INPUT_KINDS.map(input => {

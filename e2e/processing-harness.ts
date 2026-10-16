@@ -11,3 +11,4 @@ export {inspectArchive} from '../src/lib/polyglot/format/archive';
 export {inspectInputs} from '../src/lib/polyglot/logic/inspect';
 export {prepareComposition} from '../src/lib/polyglot/logic/compose';
 export {generateResult} from '../src/lib/polyglot/logic/generate';
+export {inspectAudio} from '../src/lib/polyglot/format/audio';

@@ -13,3 +13,5 @@ minimumReleaseAgeExclude:
   - '@angular/cli@22.2.3'
   - '@schematics/angular@22.2.3'
   - '@zip.js/zip.js@2.24.0'
+  - '@mediabunny/aac-encoder@1.61.6'
+  - mediabunny@1.61.6

@@ -34,7 +34,7 @@
     "FORMAT_RESOURCE_LIMIT": "Remove a file before adding another input.",
     "COMBINATION_UNSUPPORTED": "This combination has not been verified as compatible.",
     "ROLE_CONFLICT": "This input slot is occupied. Remove or replace the selected file.",
-    "IMPLEMENTATION_UNAVAILABLE": "Audio input conversion is not available yet.",
+    "IMPLEMENTATION_UNAVAILABLE": "This input capability is not available.",
     "INPUT_AMBIGUOUS": "Assign a role to the ambiguous input first.",
     "TOTAL_TOO_LARGE": "Remove files to make room within the total input limit."
   },

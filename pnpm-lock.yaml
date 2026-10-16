@@ -35,6 +35,9 @@ importers:
       '@jsverse/transloco':
         specifier: 8.4.0
         version: 8.4.0(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(rxjs@7.8.2)(typescript@6.0.2)
+      '@mediabunny/aac-encoder':
+        specifier: 1.61.6
+        version: 1.61.6(mediabunny@1.61.6)
       '@ngrx/effects':
         specifier: 22.0.1
         version: 22.0.1(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(@ngrx/store@22.0.1(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(rxjs@7.8.2))(rxjs@7.8.2)
@@ -44,6 +47,9 @@ importers:
       '@zip.js/zip.js':
         specifier: 2.24.0
         version: 2.24.0
+      mediabunny:
+        specifier: 1.61.6
+        version: 1.61.6
       rxjs:
         specifier: 7.8.2
         version: 7.8.2
@@ -826,6 +832,11 @@ packages:
   '@material-design-icons/svg@0.14.15':
     resolution: {integrity: sha512-6nbjwGwyJnphwQUscJAYqw1Tk6+W8KvsgOAeyVgzIFXVsHfgX5XyplTUcZ29wbcTUysMMyCUi1LYpmFKA/e61g==}
 
+  '@mediabunny/aac-encoder@1.61.6':
+    resolution: {integrity: sha512-rdeYDcjzi1VSpGcVlq9zBBCqrqualmh7cJjckl7lrKGpCrSIOTCdivdEHTFSCgHoH5G/aMxiCOb9M4fyAmzn6w==}
+    peerDependencies:
+      mediabunny: ^1.0.0
+
   '@modelcontextprotocol/core@2.3.1':
     resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
     engines: {node: '>=20'}
@@ -1326,6 +1337,12 @@ packages:
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
+
+  '@types/dom-mediacapture-transform@0.1.12':
+    resolution: {integrity: sha512-d7/QsLRwF864A5mgIM/YrfiglHoYn7zgCcAoJgW404r+2DwnNr7EBbLnCWpmOMgH8y0te73L1AV6H1bmauaWFw==}
+
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
 
   '@types/esrecurse@4.3.1':
     resolution: {integrity: sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw==}
@@ -2035,6 +2052,9 @@ packages:
 
   magic-string@1.4.3:
     resolution: {integrity: sha512-z12OxmaPGE0F4xlpGdjuAUckipLpQlTAuAmyGhNoD7ODpYUzvDfvtxUbjM/jwznyP178oju/KDdyi220wNJ0RQ==}
+
+  mediabunny@1.61.6:
+    resolution: {integrity: sha512-VHEZ53/7jGl4dQ+uOdndsZufFYwEUFWv9UXgvrGun3OapyzoqI9iaPOD7z3xxY/nAttLZBNwswgJzMtGJAquOQ==}
 
   mimic-function@5.0.1:
     resolution: {integrity: sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==}
@@ -3365,6 +3385,10 @@ snapshots:
 
   '@material-design-icons/svg@0.14.15': {}
 
+  '@mediabunny/aac-encoder@1.61.6(mediabunny@1.61.6)':
+    dependencies:
+      mediabunny: 1.61.6
+
   '@modelcontextprotocol/core@2.3.1':
     dependencies:
       zod: 4.6.6
@@ -3675,6 +3699,12 @@ snapshots:
       assertion-error: 2.0.1
 
   '@types/deep-eql@4.0.2': {}
+
+  '@types/dom-mediacapture-transform@0.1.12':
+    dependencies:
+      '@types/dom-webcodecs': 0.1.13
+
+  '@types/dom-webcodecs@0.1.13': {}
 
   '@types/esrecurse@4.3.1': {}
 
@@ -4391,6 +4421,11 @@ snapshots:
   magic-string@1.4.3:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  mediabunny@1.61.6:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.12
+      '@types/dom-webcodecs': 0.1.13
 
   mimic-function@5.0.1: {}
 

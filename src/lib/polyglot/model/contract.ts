@@ -18,7 +18,9 @@ export type DiagnosticCode =
   | 'MP4_STRUCTURE' | 'FORMAT_RESOURCE_LIMIT' | 'OFFSET_OVERFLOW' | 'HTML_ENCODING'
   | 'PDF_INVALID' | 'PDF_STRUCTURE' | 'PDF_ENCRYPTED'
   | 'ARCHIVE_INVALID' | 'ARCHIVE_UNSUPPORTED' | 'ARCHIVE_ENCRYPTED' | 'ARCHIVE_SPLIT'
-  | 'ARCHIVE_EXPANDED_LIMIT' | 'ARCHIVE_PATH' | 'ARCHIVE_COLLISION' | 'COMBINATION_UNSUPPORTED';
+  | 'ARCHIVE_EXPANDED_LIMIT' | 'ARCHIVE_PATH' | 'ARCHIVE_COLLISION' | 'COMBINATION_UNSUPPORTED'
+  | 'AUDIO_INVALID' | 'AUDIO_CODEC' | 'AUDIO_TRACKS' | 'AUDIO_CHANNELS'
+  | 'AUDIO_DECODE_UNAVAILABLE' | 'AUDIO_CONVERSION_FAILED';
 
 /** Contains no translated prose, raw errors, file names, or file contents. */
 export interface Diagnostic {
@@ -111,10 +113,10 @@ export interface ArtifactReference {
 
 /** Measured work units; totals are scoped to the named stage. */
 export interface JobProgress {
-  readonly stage: 'inspect' | 'plan' | 'generate' | 'extract' | 'pack' | 'cleanup';
+  readonly stage: 'inspect' | 'plan' | 'convert' | 'generate' | 'extract' | 'pack' | 'cleanup';
   readonly completed: number;
   readonly total: number;
-  readonly unit: 'bytes' | 'inputs';
+  readonly unit: 'bytes' | 'inputs' | 'microseconds';
 }
 
 /** Shared cooperative cancellation and progress reporting. */

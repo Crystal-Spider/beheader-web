@@ -8,4 +8,6 @@ The ICO/MP4 container layout, baseline HTML wrapping, and classic PDF relocation
 
 Third-party dependencies retain their own licenses. Production builds emit their license notices in `docs/3rdpartylicenses.txt`.
 
+Audio processing uses the unmodified, pinned Mediabunny and `@mediabunny/aac-encoder` 1.61.6 packages, by Vanilagy and contributors, under MPL-2.0. The extension bundles a focused FFmpeg AAC encoder as WebAssembly. Local audio component notices and MPL/LGPL license texts are retained under `public/assets/license` and copied to `docs/assets/license`. Exact package/source references and upstream build instructions are recorded there.
+
 Material Design SVG icons are distributed by the `@material-design-icons/svg` package under Apache License 2.0. The selected icon assets and their license are included under `public/assets/icon` and copied into the static build.

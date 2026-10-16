@@ -5,6 +5,7 @@ import {inspectHtml} from '../format/html';
 import {inspectMp4, Mp4Info} from '../format/mp4';
 import {inspectPdf, PdfInfo} from '../format/pdf';
 import {ArchiveInfo, inspectArchive, mergeArchives} from '../format/archive';
+import {AudioInfo, inspectAudio} from '../format/audio';
 import {checkCancelled, diagnose, ProcessingError} from './diagnostic';
 import {familyMask, FORMAT_FAMILIES, VERIFIED_COMBINATIONS} from './compatibility';
 
@@ -12,7 +13,7 @@ import {familyMask, FORMAT_FAMILIES, VERIFIED_COMBINATIONS} from './compatibilit
 export interface PreparedComposition {
   readonly plan: CompositionPlan;
   readonly image?: {readonly input: BlobInput; readonly info: ImageInfo};
-  readonly media?: {readonly source: InputSource; readonly info: Mp4Info};
+  readonly media?: {readonly source: InputSource; readonly info: Mp4Info} | {readonly source: InputSource; readonly audio: AudioInfo};
   readonly html?: {readonly source: InputSource; readonly bom: number};
   readonly pdf?: {readonly source: InputSource; readonly info: PdfInfo};
   readonly archives?: readonly ArchiveInfo[];
@@ -70,9 +71,8 @@ export async function prepareComposition(inspection: Inspection, sources: readon
         image = {input: source.reader, info: await inspectImage(source.reader, context)};
       } else if (description.role === 'media') {
         if (description.candidates.some(candidate => candidate.evidence === 'signature' && candidate.family === 'media' && ['mp3', 'wav', 'ogg', 'aac'].includes(candidate.format))) {
-          throw new ProcessingError({code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error', details: {capability: 'audio-conversion'}});
-        }
-        media = {source, info: await inspectMp4(source.reader, context)};
+          media = {source, audio: await inspectAudio(source, context)};
+        } else { media = {source, info: await inspectMp4(source.reader, context)}; }
       } else if (description.role === 'html') {
         html = {source, bom: await inspectHtml(source.reader, context)};
       } else if (description.role === 'pdf') {
@@ -96,7 +96,7 @@ export async function prepareComposition(inspection: Inspection, sources: readon
   const ready = !diagnostics.some(diagnostic => diagnostic.severity === 'error');
   const interpretations: CompositionPlan['interpretations'] = ready ? [
     ...(image ? [{family: 'image' as const, extensions: ['ico']}] : []),
-    ...(media ? [{family: 'media' as const, extensions: ['mp4']}] : []),
+    ...(media ? [{family: 'media' as const, extensions: 'audio' in media || !media.info.video ? ['m4a', 'mp4'] : ['mp4']}] : []),
     ...(html ? [{family: 'html' as const, extensions: ['html', 'htm']}] : []),
     ...(pdf ? [{family: 'pdf' as const, extensions: ['pdf']}] : []),
     ...(archives.length ? [{family: 'archive' as const, extensions: ['zip']}] : [])

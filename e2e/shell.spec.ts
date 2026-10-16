@@ -83,8 +83,7 @@ test('ships its UI assets locally and links to the source and funding destinatio
   await expect(page.getByRole('link', {name: 'Ko-fi', exact: true})).toHaveAttribute('href', 'https://ko-fi.com/crystalspider');
   await expect(page.locator('bhw-icon svg')).toHaveCount(10);
   const audio = page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Audio/});
-  await expect(audio).toHaveAttribute('aria-disabled', 'true');
-  await expect(audio).toHaveAttribute('title', 'Audio input conversion is not available yet.');
+  await expect(audio).toHaveAttribute('aria-disabled', 'false');
   await expect(page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Video/})).toHaveAttribute('aria-disabled', 'false');
   expect(external).toEqual([]);
 });

@@ -22,6 +22,7 @@ export interface Mp4Info {
   readonly mdats: readonly Mp4Box[];
   readonly tables: readonly ChunkTable[];
   readonly audio: boolean;
+  readonly video: boolean;
 }
 
 /** Structural work limits protect metadata parsing without buffering media payloads. */
@@ -237,7 +238,7 @@ async function inspectAac(reader: BinaryReader, box: Mp4Box): Promise<void> {
   const audioType = bytes[config.start]! >> 3;
   const frequency = ((bytes[config.start]! & 7) << 1) | (bytes[config.start + 1]! >> 7);
   const channels = (bytes[config.start + 1]! >> 3) & 15;
-  if (audioType !== 2 || frequency > 12 || channels < 1 || channels > 2) { invalid('MP4_CODEC'); }
+  if (audioType !== 2 || frequency > 12 || channels < 1 || channels > 7) { invalid('MP4_CODEC'); }
   if (bytes[config.start + 1]! & 7) { invalid('MP4_CODEC'); }
   if (config.end - config.start >= 5) {
     const sync = (bytes[config.start + 2]! << 3) | (bytes[config.start + 3]! >> 5);
@@ -409,7 +410,7 @@ export async function inspectMp4(input: SeekableInput, context: ProcessingContex
   const ftyp = single(top, 'ftyp');
   if (ftyp.start !== 0 || ftyp.size < ftyp.header + 8 || (ftyp.size - ftyp.header) % 4) { invalid('MP4_STRUCTURE'); }
   const brand = fourCC(await reader.read(ftyp.start + ftyp.header, 4));
-  if (!['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'M4V '].includes(brand)) { invalid('MP4_STRUCTURE'); }
+  if (!['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'M4V ', 'M4A '].includes(brand)) { invalid('MP4_STRUCTURE'); }
   const mdats = top.filter(box => box.type === 'mdat');
   if (!mdats.length) { invalid('MP4_INVALID'); }
   const moov = single(top, 'moov');
@@ -451,6 +452,5 @@ export async function inspectMp4(input: SeekableInput, context: ProcessingContex
     await inspectDescription(reader, single(samples, 'stsd'), handler);
     tables.push(await inspectSamples(reader, samples, mdats));
   }
-  if (!handlers.includes('vide')) { invalid('IMPLEMENTATION_UNAVAILABLE'); }
-  return {ftyp, mdats, tables, audio: handlers.includes('soun')};
+  return {ftyp, mdats, tables, audio: handlers.includes('soun'), video: handlers.includes('vide')};
 }

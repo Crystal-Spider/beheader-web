@@ -1,0 +1,23 @@
+Audio processing dependencies
+
+Mediabunny 1.61.6 and @mediabunny/aac-encoder 1.61.6
+Copyright (c) 2026-present, Vanilagy and contributors
+Mozilla Public License 2.0; see MPL-2.0.txt.
+These packages are used without source modifications.
+
+Source packages, including TypeScript/C bridge sources and encoder build instructions:
+https://www.npmjs.com/package/mediabunny/v/1.61.6
+https://www.npmjs.com/package/@mediabunny/aac-encoder/v/1.61.6
+https://github.com/Vanilagy/mediabunny
+Published source commit: 8dee3638fb1755e58b88d4432e344c5916027e76
+
+The focused AAC encoder includes code from FFmpeg's libavcodec/libavutil,
+compiled to WebAssembly by the extension's upstream build. FFmpeg is
+copyright its respective contributors and distributed under GNU LGPL 2.1
+or later for this non-GPL encoder configuration; see LGPL-2.1.txt.
+https://ffmpeg.org/
+https://github.com/FFmpeg/FFmpeg
+The extension package README contains its FFmpeg configure/build recipe.
+
+Production dependency license notices are also collected in 3rdpartylicenses.txt
+at the application root. Beheader Web's own source license remains GPL-3.0-only.

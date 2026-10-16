@@ -22,7 +22,8 @@ describe('selection-dependent input availability', () => {
     const reducer = selectionFeature.reducer;
     let state = reducer(undefined, {type: 'init'});
     const select = (): ReturnType<typeof inputAvailability> => selectionFeature.selectAvailability.projector(state.inputs);
-    expect(select().find(item => item.kind === 'audio')).toMatchObject({enabled: false, reason: 'IMPLEMENTATION_UNAVAILABLE'});
+    expect(select().find(item => item.kind === 'audio')?.enabled).toBe(true);
+    expect(inputAvailability([], {audio: false}).find(item => item.kind === 'audio')).toMatchObject({enabled: false, reason: 'IMPLEMENTATION_UNAVAILABLE'});
     state = reducer(state, selectionActions.changed({inputs: [input('first', 'image'), input('zip1', 'archive'), input('zip2', 'archive')]}));
     expect(select().find(item => item.kind === 'image')?.enabled).toBe(false);
     expect(select().find(item => item.kind === 'archive')?.enabled).toBe(true);

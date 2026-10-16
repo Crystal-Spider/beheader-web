@@ -1,2 +1,9 @@
 # PDF fixture offsets depend on exact bytes, including CRLF and fixed-width xref spaces.
 e2e/fixture/*.pdf binary
+e2e/fixture/*.mp3 binary
+e2e/fixture/*.wav binary
+e2e/fixture/*.ogg binary
+e2e/fixture/*.m4a binary
+e2e/fixture/*.aac binary
+# Generated JavaScript includes an inline WASM string whose bytes must survive checkout unchanged.
+docs/*.js binary

@@ -114,6 +114,15 @@ describe('worker client ownership', () => {
     expect(client.busy).toBe(false);
   });
 
+  it('preserves unavailable-storage failures without retrying the same unavailable API', async() => {
+    const {client, worker, cleanup} = setup(vi.fn(() => Promise.reject(new Error('unsupported storage'))));
+    const job = client.run({operation: 'generate', inputs: []});
+    worker().emit({type: 'failed', jobId: worker().jobId, diagnostic: {code: 'STORAGE_UNAVAILABLE', severity: 'error'}});
+    await expect(job).rejects.toMatchObject({diagnostic: {code: 'STORAGE_UNAVAILABLE'}});
+    expect(cleanup).not.toHaveBeenCalled();
+    expect(client.busy).toBe(false);
+  });
+
   it('reports worker construction or structured-clone failures without retaining an active job', async() => {
     const construction = new WorkerClient(() => { throw new Error('worker unavailable'); }, async() => {});
     await expect(construction.run(request)).rejects.toMatchObject({diagnostic: {code: 'WORKER_FAILED'}});
