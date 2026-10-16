@@ -7,6 +7,7 @@ const checks = [
   ['Lint', 'eslint/bin/eslint.js', ['.', '--max-warnings=0']],
   ['Angular types', '@angular/compiler-cli/bundles/src/bin/ngc.js', ['--project', 'tsconfig.app.json', '--noEmit']],
   ['Tooling types', 'typescript/bin/tsc', ['--project', 'tsconfig.tools.json', '--noEmit']],
+  ['Worker types', 'typescript/bin/tsc', ['--project', 'tsconfig.worker.json', '--noEmit']],
   ['Unit tests', 'vitest/vitest.mjs', ['run', '--passWithNoTests']],
   ['Browser smoke', '@playwright/test/cli.js', ['test']],
   ['Production build', '@angular/cli/bin/ng.js', ['build']]

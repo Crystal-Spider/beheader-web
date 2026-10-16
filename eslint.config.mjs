@@ -37,7 +37,7 @@ export default tseslint.config(
     processor: angular.processInlineTemplates,
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.app.json', './tsconfig.tools.json'],
+        project: ['./tsconfig.app.json', './tsconfig.tools.json', './tsconfig.worker.json'],
         tsconfigRootDir: import.meta.dirname
       }
     },
