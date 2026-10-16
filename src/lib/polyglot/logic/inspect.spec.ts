@@ -55,7 +55,7 @@ describe('inspection and role planning', () => {
     const plan = planComposition(result, context());
     expect(plan.ready).toBe(false);
     expect(plan.interpretations).toEqual([]);
-    expect(plan.diagnostics.map(item => item.code)).toContain('IMPLEMENTATION_UNAVAILABLE');
+    expect(plan.diagnostics.map(item => item.code)).toContain('MINIMUM_FAMILIES');
   });
 
   it('detects appended ZIP end records using a tail read and requires a role choice', async() => {

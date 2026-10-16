@@ -39,7 +39,7 @@ export function isWorkerResponse(value: unknown): value is WorkerResponse {
   if (!isRecord(value) || typeof value['jobId'] !== 'string') { return false; }
   if (value['type'] === 'progress') {
     const progress = value['progress'];
-    return isRecord(progress) && ['inspect', 'plan', 'generate', 'cleanup'].includes(String(progress['stage']))
+    return isRecord(progress) && ['inspect', 'plan', 'generate', 'extract', 'pack', 'cleanup'].includes(String(progress['stage']))
       && ['bytes', 'inputs'].includes(String(progress['unit']))
       && typeof progress['completed'] === 'number' && Number.isSafeInteger(progress['completed']) && progress['completed'] >= 0
       && typeof progress['total'] === 'number' && Number.isSafeInteger(progress['total']) && progress['total'] >= progress['completed'];

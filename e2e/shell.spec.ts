@@ -81,7 +81,11 @@ test('ships its UI assets locally and links to the source and funding destinatio
   await expect(page.getByRole('link', {name: 'Source', exact: true})).toHaveAttribute('href', 'https://github.com/Crystal-Spider/beheader-web');
   await expect(page.getByRole('link', {name: 'Patreon', exact: true})).toHaveAttribute('href', 'https://www.patreon.com/crystalspider');
   await expect(page.getByRole('link', {name: 'Ko-fi', exact: true})).toHaveAttribute('href', 'https://ko-fi.com/crystalspider');
-  await expect(page.locator('bhw-icon svg')).toHaveCount(9);
+  await expect(page.locator('bhw-icon svg')).toHaveCount(10);
+  const audio = page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Audio/});
+  await expect(audio).toHaveAttribute('aria-disabled', 'true');
+  await expect(audio).toHaveAttribute('title', 'Audio input conversion is not available yet.');
+  await expect(page.getByRole('list', {name: 'Planned file types'}).getByRole('listitem').filter({hasText: /^Video/})).toHaveAttribute('aria-disabled', 'false');
   expect(external).toEqual([]);
 });
 
@@ -95,7 +99,21 @@ for (const width of [320, 390, 768, 1280]) {
     await page.getByRole('option', {name: 'IT Italiano'}).click();
     await expect(page.getByRole('heading', {name: 'I tuoi file', exact: true})).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await expect(page.getByRole('list', {name: 'Tipi di file previsti'}).getByRole('listitem')).toHaveCount(5);
+    await expect(page.getByRole('list', {name: 'Tipi di file previsti'}).getByRole('listitem')).toHaveCount(6);
+    await expect(page.getByRole('listbox')).toBeHidden();
+    const picker = page.getByRole('combobox', {name: 'Lingua'});
+    await picker.click();
+    await expect.poll(async() => {
+      const input = await picker.boundingBox();
+      const panel = await page.getByRole('listbox').boundingBox();
+      if (!input || !panel) { return Infinity; }
+      return Math.min(Math.abs(input.x - panel.x), Math.abs(input.x + input.width - panel.x - panel.width));
+    }).toBeLessThanOrEqual(1);
+    if (width === 390 || width === 1280) {
+      await page.screenshot({path: `test-results/language-panel-${width}.png`, fullPage: true});
+    }
+    await picker.press('Escape');
+    await expect(page.getByRole('listbox')).toBeHidden();
     if (width === 390 || width === 1280) {
       await page.screenshot({path: `test-results/milestone-2-${width}.png`, fullPage: true});
     }

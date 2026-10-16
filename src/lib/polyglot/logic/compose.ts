@@ -3,10 +3,10 @@ import {BlobInput} from '../io/blob-input';
 import {ImageInfo, inspectImage} from '../format/image';
 import {inspectHtml} from '../format/html';
 import {inspectMp4, Mp4Info} from '../format/mp4';
+import {inspectPdf, PdfInfo} from '../format/pdf';
+import {ArchiveInfo, inspectArchive, mergeArchives} from '../format/archive';
 import {checkCancelled, diagnose, ProcessingError} from './diagnostic';
-
-/** Counted families, independent of optional payloads and asset archives. */
-export const FORMAT_FAMILIES: readonly FormatFamily[] = ['image', 'media', 'html', 'pdf', 'archive'];
+import {familyMask, FORMAT_FAMILIES, VERIFIED_COMBINATIONS} from './compatibility';
 
 /** Runtime preparation never enters state; only its plan metadata is serializable. */
 export interface PreparedComposition {
@@ -14,6 +14,8 @@ export interface PreparedComposition {
   readonly image?: {readonly input: BlobInput; readonly info: ImageInfo};
   readonly media?: {readonly source: InputSource; readonly info: Mp4Info};
   readonly html?: {readonly source: InputSource; readonly bom: number};
+  readonly pdf?: {readonly source: InputSource; readonly info: PdfInfo};
+  readonly archives?: readonly ArchiveInfo[];
 }
 
 /**
@@ -36,7 +38,8 @@ export function planComposition(inspection: Inspection, context: ProcessingConte
     diagnostics.push({code: 'MISSING_HTML', severity: 'error'});
   }
   if (families.length < 2) { diagnostics.push({code: 'MINIMUM_FAMILIES', severity: 'error'}); }
-  if (!roles.includes('image') || !roles.includes('media') || roles.some(role => role !== 'image' && role !== 'media' && role !== 'html')) {
+  if (families.length >= 2 && !VERIFIED_COMBINATIONS.includes(familyMask(families))) { diagnostics.push({code: 'COMBINATION_UNSUPPORTED', severity: 'error'}); }
+  if (roles.some(role => role !== null && !FORMAT_FAMILIES.includes(role as FormatFamily))) {
     diagnostics.push({code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
   }
   return {inputs: inspection.inputs, diagnostics, families, interpretations: [], ready: false};
@@ -56,6 +59,8 @@ export async function prepareComposition(inspection: Inspection, sources: readon
   let image: PreparedComposition['image'];
   let media: PreparedComposition['media'];
   let html: PreparedComposition['html'];
+  let pdf: PreparedComposition['pdf'];
+  const archives: ArchiveInfo[] = [];
   for (const [index, description] of inspection.inputs.entries()) {
     const source = sources.find(source => source.id === description.id);
     if (!source || source.reader.size !== description.size) { throw new ProcessingError({code: 'INVALID_REQUEST', severity: 'error'}); }
@@ -70,6 +75,10 @@ export async function prepareComposition(inspection: Inspection, sources: readon
         media = {source, info: await inspectMp4(source.reader, context)};
       } else if (description.role === 'html') {
         html = {source, bom: await inspectHtml(source.reader, context)};
+      } else if (description.role === 'pdf') {
+        pdf = {source, info: await inspectPdf(source.reader, context)};
+      } else if (description.role === 'archive') {
+        archives.push(await inspectArchive(source, context));
       }
     } catch(error) {
       const diagnostic = diagnose(error);
@@ -79,11 +88,21 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     context.progress({stage: 'plan', completed: index + 1, total: inspection.inputs.length, unit: 'inputs'});
   }
   checkCancelled(context.signal);
-  const ready = !!image && !!media && !diagnostics.some(diagnostic => diagnostic.severity === 'error');
+  let collisions: CompositionPlan['collisions'] = [];
+  try {
+    collisions = mergeArchives(archives).collisions;
+    if (collisions.length) { diagnostics.push({code: 'ARCHIVE_COLLISION', severity: 'warning', details: {count: collisions.length}}); }
+  } catch(error) { diagnostics.push(diagnose(error)); }
+  const ready = !diagnostics.some(diagnostic => diagnostic.severity === 'error');
   const interpretations: CompositionPlan['interpretations'] = ready ? [
-    {family: 'image', extensions: ['ico']},
-    {family: 'media', extensions: ['mp4']},
-    ...(html ? [{family: 'html' as const, extensions: ['html', 'htm']}] : [])
+    ...(image ? [{family: 'image' as const, extensions: ['ico']}] : []),
+    ...(media ? [{family: 'media' as const, extensions: ['mp4']}] : []),
+    ...(html ? [{family: 'html' as const, extensions: ['html', 'htm']}] : []),
+    ...(pdf ? [{family: 'pdf' as const, extensions: ['pdf']}] : []),
+    ...(archives.length ? [{family: 'archive' as const, extensions: ['zip']}] : [])
   ] : [];
-  return {plan: {...initial, diagnostics, interpretations, ready}, ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {})};
+  return {
+    plan: {...initial, diagnostics, interpretations, ready, collisions, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
+    ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives
+  };
 }

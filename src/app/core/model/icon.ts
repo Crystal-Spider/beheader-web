@@ -5,7 +5,8 @@
 export const ICON_FILES = {
   upload: 'upload_file',
   image: 'image',
-  media: 'movie',
+  audio: 'audio_file',
+  video: 'movie',
   html: 'code',
   pdf: 'description',
   archive: 'folder_zip',

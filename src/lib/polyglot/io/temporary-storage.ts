@@ -40,7 +40,14 @@ export async function cleanupJob(jobId: string): Promise<void> {
   validateStorageId(jobId);
   try {
     const root = await storageRoot();
-    await root.removeEntry(jobId, {recursive: true});
+    // Worker termination can precede browser-side release of writable OPFS handles by a few turns.
+    for (let attempt = 0; ; attempt++) {
+      try { await root.removeEntry(jobId, {recursive: true}); break; }
+      catch(error) {
+        if (!(error instanceof DOMException) || !['NoModificationAllowedError', 'InvalidStateError'].includes(error.name) || attempt >= 5) { throw error; }
+        await new Promise(resolve => { setTimeout(resolve, 25 * 2 ** attempt); });
+      }
+    }
   } catch(error) {
     if (error instanceof DOMException && error.name === 'NotFoundError') { return; }
     throw new ProcessingError({code: 'CLEANUP_FAILED', severity: 'error'});
@@ -139,6 +146,19 @@ export class TemporaryStorage {
       if (file.size !== artifact.size) { throw new ProcessingError({code: 'TRUNCATED_INPUT', severity: 'error'}); }
       return file;
     } catch(error) { throw new ProcessingError(diagnose(error)); }
+  }
+
+  /**
+   * Removes a closed intermediate from this job without retaining expanded archive payloads.
+   * @param {ArtifactReference} artifact Finished file owned by this workspace.
+   * @returns {Promise<void>} Removal of exactly that opaque file.
+   */
+  public async discard(artifact: ArtifactReference): Promise<void> {
+    this.requireOpen();
+    validateStorageId(artifact.id);
+    if (artifact.jobId !== this.jobId) { throw new ProcessingError({code: 'INVALID_REQUEST', severity: 'error'}); }
+    try { await this.directory.removeEntry(artifact.id); }
+    catch(error) { throw new ProcessingError(diagnose(error, 'CLEANUP_FAILED')); }
   }
 
   /** @returns {Promise<void>} Closes open streams, then removes only this job's files. */

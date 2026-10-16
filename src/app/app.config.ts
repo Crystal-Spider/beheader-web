@@ -7,6 +7,7 @@ import {provideTransloco} from '@jsverse/transloco';
 
 import {LANGUAGES} from '~bhw/core/model/language';
 import {Translations} from '~bhw/core/service/translations';
+import {selectionFeature} from '~bhw/feature/generator/redux/selection';
 
 import {routes} from './app.routes';
 
@@ -20,7 +21,7 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideHttpClient(),
     provideRouter(routes),
-    provideStore(),
+    provideStore({[selectionFeature.name]: selectionFeature.reducer}),
     provideEffects(),
     provideTransloco({
       config: {

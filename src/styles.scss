@@ -32,6 +32,7 @@ html {
 
 body {
   margin: 0;
+  min-width: 320px;
 }
 
 * {
@@ -46,6 +47,12 @@ a {
 :focus-visible {
   outline: 2px solid $accent;
   outline-offset: 4px;
+}
+
+// Anchor the overlay to the complete padded trigger, matching the visible control edges.
+bhw-language-picker .mat-mdc-select-trigger {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .bhw-language-panel.mat-mdc-select-panel {

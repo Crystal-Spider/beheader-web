@@ -18,7 +18,8 @@
     "choose": "Choose files",
     "formatsLabel": "Planned file types",
     "image": "Image",
-    "media": "Audio / video",
+    "audio": "Audio",
+    "video": "Video",
     "html": "HTML",
     "pdf": "PDF",
     "archive": "Archives",
@@ -28,6 +29,14 @@
     "outputEmptyTitle": "A new side to every file",
     "outputEmptyDescription": "Your combined file and its available extensions will appear here.",
     "outputHint": "One download. Different ways to open it."
+  },
+  "availability": {
+    "FORMAT_RESOURCE_LIMIT": "Remove a file before adding another input.",
+    "COMBINATION_UNSUPPORTED": "This combination has not been verified as compatible.",
+    "ROLE_CONFLICT": "This input slot is occupied. Remove or replace the selected file.",
+    "IMPLEMENTATION_UNAVAILABLE": "Audio input conversion is not available yet.",
+    "INPUT_AMBIGUOUS": "Assign a role to the ambiguous input first.",
+    "TOTAL_TOO_LARGE": "Remove files to make room within the total input limit."
   },
   "footer": {
     "inspired": "Inspired by",

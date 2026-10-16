@@ -4,7 +4,7 @@ Beheader Web is an independent browser port inspired by [Beheader](https://githu
 
 The project is distributed under GPL version 3; the full license is in `LICENSE`. Retain upstream attribution and any source-specific notices as processing code is ported in subsequent milestones.
 
-The ICO/MP4 container layout and baseline HTML wrapping in `src/lib/polyglot/logic/generate.ts` are adapted from Beheader's `beheader.js`, by p2r3, under GPL-3.0. The browser I/O, format validation, and bounded relocation implementation are part of this port. Upstream's license remains included in `LICENSE`.
+The ICO/MP4 container layout, baseline HTML wrapping, and classic PDF relocation approach in `src/lib/polyglot/logic/generate.ts` and `src/lib/polyglot/format/pdf.ts` are adapted from Beheader's `beheader.js`, by p2r3, under GPL-3.0. The browser I/O, format validation, bounded relocation, and seekable ZIP pipeline are part of this port. Upstream's license remains included in `LICENSE`.
 
 Third-party dependencies retain their own licenses. Production builds emit their license notices in `docs/3rdpartylicenses.txt`.
 

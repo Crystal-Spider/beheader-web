@@ -1,5 +1,5 @@
 import {FormatCandidate, InputDescription, InputRole, InputSource, Inspection, ProcessingContext} from '../model/contract';
-import {INPUT_LIMIT, matches, TOTAL_INPUT_LIMIT} from '../io/bytes';
+import {INPUT_COUNT_LIMIT, INPUT_LIMIT, matches, TOTAL_INPUT_LIMIT} from '../io/bytes';
 import {checkCancelled} from './diagnostic';
 
 /** Supported role names; auxiliary roles always require explicit assignment. */
@@ -12,6 +12,7 @@ export const INPUT_ROLES: readonly InputRole[] = ['image', 'media', 'html', 'pdf
  */
 export function validateSources(sources: readonly InputSource[]): Inspection['diagnostics'] {
   const diagnostics: Inspection['diagnostics'][number][] = [];
+  if (sources.length > INPUT_COUNT_LIMIT) { return [{code: 'FORMAT_RESOURCE_LIMIT', severity: 'error', details: {limit: INPUT_COUNT_LIMIT}}]; }
   const ids = new Set<string>();
   let total = 0;
   for (const source of sources) {

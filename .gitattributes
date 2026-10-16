@@ -1,0 +1,2 @@
+# PDF fixture offsets depend on exact bytes, including CRLF and fixed-width xref spaces.
+e2e/fixture/*.pdf binary

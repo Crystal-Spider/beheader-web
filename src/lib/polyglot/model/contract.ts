@@ -15,7 +15,10 @@ export type DiagnosticCode =
   | 'IMAGE_UNSUPPORTED' | 'IMAGE_ANIMATED' | 'IMAGE_MULTIPAGE' | 'IMAGE_INVALID'
   | 'IMAGE_RESOURCE_LIMIT' | 'IMAGE_DECODE_UNAVAILABLE' | 'MP4_INVALID'
   | 'MP4_FRAGMENTED' | 'MP4_ENCRYPTED' | 'MP4_CODEC' | 'MP4_TRACKS'
-  | 'MP4_STRUCTURE' | 'FORMAT_RESOURCE_LIMIT' | 'OFFSET_OVERFLOW' | 'HTML_ENCODING';
+  | 'MP4_STRUCTURE' | 'FORMAT_RESOURCE_LIMIT' | 'OFFSET_OVERFLOW' | 'HTML_ENCODING'
+  | 'PDF_INVALID' | 'PDF_STRUCTURE' | 'PDF_ENCRYPTED'
+  | 'ARCHIVE_INVALID' | 'ARCHIVE_UNSUPPORTED' | 'ARCHIVE_ENCRYPTED' | 'ARCHIVE_SPLIT'
+  | 'ARCHIVE_EXPANDED_LIMIT' | 'ARCHIVE_PATH' | 'ARCHIVE_COLLISION' | 'COMBINATION_UNSUPPORTED';
 
 /** Contains no translated prose, raw errors, file names, or file contents. */
 export interface Diagnostic {
@@ -80,6 +83,22 @@ export interface CompositionPlan extends Inspection {
   readonly families: readonly FormatFamily[];
   readonly interpretations: readonly Interpretation[];
   readonly ready: boolean;
+  readonly archives?: readonly ArchiveDescription[];
+  readonly collisions?: readonly ArchiveCollision[];
+}
+
+/** Ordered archive metadata; payloads remain outside state. */
+export interface ArchiveDescription {
+  readonly inputId: string;
+  readonly entries: number;
+  readonly expandedSize: number;
+}
+
+/** Display metadata only; never include paths in downloaded diagnostics by default. */
+export interface ArchiveCollision {
+  readonly path: string;
+  readonly earlierInputId: string;
+  readonly laterInputId: string;
 }
 
 /** Opaque reference to a file in the job workspace; no payload in state/messages. */
@@ -92,7 +111,7 @@ export interface ArtifactReference {
 
 /** Measured work units; totals are scoped to the named stage. */
 export interface JobProgress {
-  readonly stage: 'inspect' | 'plan' | 'generate' | 'cleanup';
+  readonly stage: 'inspect' | 'plan' | 'generate' | 'extract' | 'pack' | 'cleanup';
   readonly completed: number;
   readonly total: number;
   readonly unit: 'bytes' | 'inputs';

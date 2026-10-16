@@ -16,7 +16,7 @@ describe('worker runtime', () => {
     await runtime.receive(request('plan'));
     expect(messages.at(-1)).toMatchObject({type: 'complete', result: {operation: 'plan', plan: {ready: false, families: ['html', 'pdf'], interpretations: []}}});
     await runtime.receive(request('generate'));
-    expect(messages.at(-1)).toMatchObject({type: 'failed', diagnostic: {code: 'IMPLEMENTATION_UNAVAILABLE'}});
+    expect(messages.at(-1)).toMatchObject({type: 'failed', diagnostic: {code: 'PDF_INVALID'}});
   });
 
   it('handles cooperative cancellation, busy requests, and retry', async() => {

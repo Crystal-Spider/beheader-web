@@ -6,3 +6,8 @@ export {inspectMp4} from '../src/lib/polyglot/format/mp4';
 export {inspectImage, normalizeImage} from '../src/lib/polyglot/format/image';
 export {WorkerClient} from '../src/lib/polyglot/worker/worker-client';
 export {diagnose} from '../src/lib/polyglot/logic/diagnostic';
+export {inspectPdf} from '../src/lib/polyglot/format/pdf';
+export {inspectArchive} from '../src/lib/polyglot/format/archive';
+export {inspectInputs} from '../src/lib/polyglot/logic/inspect';
+export {prepareComposition} from '../src/lib/polyglot/logic/compose';
+export {generateResult} from '../src/lib/polyglot/logic/generate';

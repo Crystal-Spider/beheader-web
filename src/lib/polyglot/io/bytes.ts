@@ -5,6 +5,9 @@ export const CHUNK_BYTES = 1024 * 1024;
 export const INPUT_LIMIT = 1024 ** 3;
 export const TOTAL_INPUT_LIMIT = 2 * INPUT_LIMIT;
 
+/** Bounds selection metadata and per-input structural work, independently of byte limits. */
+export const INPUT_COUNT_LIMIT = 128;
+
 /**
  * Prevents unsafe offset arithmetic, negative lengths, and reads past EOF.
  * @param {number} offset Starting byte position.

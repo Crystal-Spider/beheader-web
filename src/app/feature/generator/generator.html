@@ -34,11 +34,14 @@
         </div>
 
         <ul class="format-list" [attr.aria-label]="t('generator.formatsLabel')">
-          <li><bhw-icon name="image" /><span>{{ t('generator.image') }}</span></li>
-          <li><bhw-icon name="media" /><span>{{ t('generator.media') }}</span></li>
-          <li><bhw-icon name="html" /><span>{{ t('generator.html') }}</span></li>
-          <li><bhw-icon name="pdf" /><span>{{ t('generator.pdf') }}</span></li>
-          <li><bhw-icon name="archive" /><span>{{ t('generator.archive') }}</span></li>
+          @for (input of availability(); track input.kind) {
+            <li [attr.aria-disabled]="!input.enabled" [attr.title]="input.reason ? t('availability.' + input.reason) : null" [class.unavailable]="!input.enabled">
+              <bhw-icon [name]="input.kind" /><span>{{ t('generator.' + input.kind) }}</span>
+              @if (input.reason) {
+                <span class="visually-hidden">{{ t('availability.' + input.reason) }}</span>
+              }
+            </li>
+          }
         </ul>
 
         <div class="combine-area">
@@ -68,7 +71,9 @@
       </div>
       <nav [attr.aria-label]="t('footer.links')">
         <a href="https://github.com/Crystal-Spider/beheader-web" rel="noopener noreferrer" target="_blank">{{ t('footer.source') }}</a>
+        <span aria-hidden="true">·</span>
         <a href="https://www.patreon.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.patreon') }}</a>
+        <span aria-hidden="true">·</span>
         <a href="https://ko-fi.com/crystalspider" rel="noopener noreferrer" target="_blank">{{ t('footer.kofi') }}</a>
       </nav>
     </footer>
