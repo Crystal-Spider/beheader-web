@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {BlobInput} from '../io/blob-input';
 import {InputSource, ProcessingContext} from '../model/contract';
 import {inspectInputs} from '../logic/inspect';
-import {headerPayloadOffset, prepareComposition} from '../logic/compose';
+import {prepareComposition} from '../logic/compose';
 import {inspectArchive} from './archive';
 import {bundleHtml} from './html-bundle';
 
@@ -54,13 +54,10 @@ describe('standalone HTML bundling', () => {
     await expect(bundleHtml(html('<img src="a.png">'), undefined, {}, {...context, signal: controller.signal})).rejects.toMatchObject({diagnostic: {code: 'CANCELLED'}});
   });
 
-  it('does not count auxiliary roles and derives available header space from selected framing', async() => {
-    const payload = {...source('raw', 'payload.bin', 'payload'), role: 'appendable' as const};
-    const insufficient = [html('<p>Text</p>'), payload];
-    expect((await prepareComposition(await inspectInputs(insufficient, context), insufficient, context)).plan.diagnostics).toContainEqual({code: 'MINIMUM_FAMILIES', severity: 'error'});
-    const inputs = [html('<p>Text</p>'), source('pdf', 'file.pdf', new Uint8Array(readFileSync('e2e/fixture/classic.pdf'))), {...source('header', 'header.bin', new Uint8Array(234)), role: 'extra-header' as const}];
+  it('does not count an asset ZIP as a second interpretation', async() => {
+    const inputs = [html('<p>Text</p>'), await zip({'site/style.css': 'body{color:blue}'})];
     const prepared = await prepareComposition(await inspectInputs(inputs, context), inputs, context);
-    expect(prepared.plan.diagnostics.some(item => item.code === 'HEADER_SPACE')).toBe(true);
-    expect(prepared.plan.headerSpace).toBeLessThan(256 - headerPayloadOffset(true));
+    expect(prepared.plan.families).toEqual(['html']);
+    expect(prepared.plan.diagnostics).toContainEqual({code: 'MINIMUM_FAMILIES', severity: 'error'});
   });
 });

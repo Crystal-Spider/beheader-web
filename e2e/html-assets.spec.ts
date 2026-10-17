@@ -7,7 +7,7 @@ import {evidenceDirectory} from './evidence';
 
 const harness = buildSync({entryPoints: ['e2e/processing-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwHarness', platform: 'browser'}).outputFiles[0]!.text;
 
-test('bundles nested assets offline and retains all interpretations with ordered advanced payloads', async({page, context, browserName}) => {
+test('bundles nested assets offline and retains all interpretations with an HTML asset ZIP', async({page, context, browserName}) => {
   const zip = new ZipWriter(new Uint8ArrayWriter(), {useWebWorkers: false});
   for (const [name, bytes] of [
     ['site/css/main.css', new TextEncoder().encode('@import "nested.css" screen;h1{background-image:url(../image.png)}')],
@@ -25,10 +25,7 @@ test('bundles nested assets offline and retains all interpretations with ordered
     const inputs = [
       ...files.map(({name, bytes}) => ({id: name, file: new File([new Uint8Array(bytes)], name)})),
       {id: 'html', file: new File(['<!doctype html><link rel="stylesheet" href="css/main.css"><script src="main.js"></script><h1>Città 日本語 🙂</h1><img src="image.png" srcset="image.png 1x, image.png 2x">'], 'index.html')},
-      {id: 'assets', file: new File([new Uint8Array(assets)], 'assets.zip'), role: 'html-assets' as const},
-      {id: 'first', file: new File(['FIRST-APPENDABLE'], 'first.bin'), role: 'appendable' as const},
-      {id: 'second', file: new File(['SECOND-APPENDABLE'], 'second.bin'), role: 'appendable' as const},
-      {id: 'header', file: new File(['HEADER-PAYLOAD'], 'header.bin'), role: 'extra-header' as const}
+      {id: 'assets', file: new File([new Uint8Array(assets)], 'assets.zip'), role: 'html-assets' as const}
     ];
     const generated = await client.run({operation: 'generate', inputs, options: {htmlPath: 'site/index.html'}});
     if (generated.operation !== 'generate') { throw new Error('generation failed'); }
@@ -36,9 +33,6 @@ test('bundles nested assets offline and retains all interpretations with ordered
     finally { await cleanupJob(generated.artifact.jobId); }
   }, {files, worker, assets: Array.from(await zip.close())});
   const bytes = new Uint8Array(result);
-  const text = new TextDecoder().decode(bytes);
-  expect(text).toContain('HEADER-PAYLOAD');
-  expect(text).toContain('FIRST-APPENDABLESECOND-APPENDABLE');
   const directory = evidenceDirectory(browserName);
   mkdirSync(`${directory}/advanced`, {recursive: true});
   writeFileSync(`${directory}/advanced/all.polyglot`, bytes);
@@ -57,7 +51,7 @@ test('bundles nested assets offline and retains all interpretations with ordered
   expect(await frame.locator('img').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
 });
 
-test('requires an explicit decision for unresolved resources and rejects unsafe header data', async({page}) => {
+test('requires an explicit decision for unresolved resources', async({page}) => {
   await page.goto('./'); await page.addScriptTag({content: harness});
   const pdf = Array.from(readFileSync('e2e/fixture/classic.pdf'));
   const result = await page.evaluate(async pdf => {
@@ -67,9 +61,7 @@ test('requires an explicit decision for unresolved resources and rejects unsafe 
     const inspection = await inspectInputs(sources, context);
     const blocked = await prepareComposition(inspection, sources, context);
     const allowed = await prepareComposition(inspection, sources, context, {allowUnresolved: true});
-    const unsafe = [...sources, {id: 'raw', name: 'header.bin', mediaType: '', reader: new BlobInput(new Blob(['-->'])), role: 'extra-header' as const}];
-    const badHeader = await prepareComposition(await inspectInputs(unsafe, context), unsafe, context, {allowUnresolved: true});
-    return {blocked: blocked.plan.ready, allowed: allowed.plan.ready, unsafe: badHeader.plan.diagnostics.map(item => item.code)};
+    return {blocked: blocked.plan.ready, allowed: allowed.plan.ready, codes: allowed.plan.diagnostics.map(item => item.code)};
   }, pdf);
-  expect(result).toEqual({blocked: false, allowed: true, unsafe: ['HTML_UNRESOLVED', 'HEADER_CONTENT']});
+  expect(result).toEqual({blocked: false, allowed: true, codes: ['HTML_UNRESOLVED']});
 });

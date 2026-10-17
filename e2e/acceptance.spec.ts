@@ -47,7 +47,7 @@ for (const language of ['en', 'it'] as const) {
   });
 }
 
-test('keeps selected inputs, advanced controls and the generated result accessible', async({page}, testInfo) => {
+test('keeps selected inputs, HTML asset controls and the generated result accessible', async({page}, testInfo) => {
   let generating = false;
   let release = (): void => {};
   const gate = new Promise<void>(resolve => { release = resolve; });
@@ -60,7 +60,6 @@ test('keeps selected inputs, advanced controls and the generated result accessib
   test.skip(!storage, 'This runner cannot open OPFS; real Safari generation acceptance is tracked separately.');
   await page.getByRole('button', {name: 'Try an example', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
-  await page.getByRole('button', {name: 'Additional payloads', exact: true}).click();
   let result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(result.violations).toEqual([]);
   generating = true;

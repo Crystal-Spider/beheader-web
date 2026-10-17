@@ -32,7 +32,7 @@ test('uses the production worker for real File cloning, inspection, planning, ca
     await client.cancel();
     const cancellation = await cancelled;
     const retry = await client.run({operation: 'inspect', inputs});
-    return {inspection, plan, cancellation, retry, busy: client.busy, storage: Object.keys(localStorage)};
+    return {inspection, plan, cancellation, retry, busy: client.busy, storage: Object.keys(localStorage).filter(key => key !== 'bhw.hero-introduced')};
   }, workerFile);
   expect(result.inspection).toMatchObject({operation: 'inspect', inspection: {inputs: [{role: 'html'}, {role: 'pdf'}]}});
   expect(result.plan).toMatchObject({operation: 'plan', plan: {ready: false, families: ['html', 'pdf'], interpretations: []}});

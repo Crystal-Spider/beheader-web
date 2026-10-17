@@ -1,0 +1,30 @@
+<ng-container *transloco="let t">
+  <section class="hero" [attr.aria-labelledby]="flipped() ? 'hero-guide-title' : 'hero-title'" [class.showing-guide]="flipped()">
+    <div class="faces">
+      <div class="face front" [attr.aria-hidden]="flipped()" [inert]="flipped()">
+        <p class="eyebrow">{{ t('hero.eyebrow') }}</p>
+        <h1 id="hero-title">{{ t('hero.title') }}</h1>
+        <div class="body">
+          <p class="hero-description">{{ t('hero.description') }}</p>
+          <p class="privacy"><bhw-icon name="privacy" />{{ t('hero.privacy') }}</p>
+        </div>
+      </div>
+      <div class="face guide" id="hero-guide" [attr.aria-hidden]="!flipped()" [inert]="!flipped()">
+        <h2 id="hero-guide-title">{{ t('hero.guideTitle') }}</h2>
+        <div class="body">
+          <p>{{ t('hero.guideDescription') }}</p>
+          <ol>
+            <li>{{ t('hero.stepChoose') }}</li>
+            <li>{{ t('hero.stepCombine') }}</li>
+            <li>{{ t('hero.stepDownload') }}</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <span aria-hidden="true" class="face-labels"><span class="face-label" [class.current]="!flipped()">.title</span><span class="face-label" [class.current]="flipped()">.desc</span></span>
+    <bhw-icon-button alternateIcon="back" class="flip-toggle" controls="hero-guide" icon="sort" [alternateShown]="flipped()" [class.inviting]="inviting()" [expanded]="flipped()" [label]="t(flipped() ? 'hero.hideGuide' : 'hero.showGuide')" (clicked)="toggle()" />
+    @if (inviting()) {
+      <bhw-sparkle-trail aria-hidden="true" />
+    }
+  </section>
+</ng-container>

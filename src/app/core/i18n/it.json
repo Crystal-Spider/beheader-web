@@ -1,4 +1,9 @@
 {
+  "seo": {
+    "title": "Beheader Web — Generatore locale di file poliglotti",
+    "description": "Combina immagini, audio o video, HTML, PDF e archivi supportati in un file poliglotta. I file restano sul dispositivo. Gratis e utilizzabile offline.",
+    "imageAlt": "Icona Beheader Web: un riquadro quadrato con immagine e testo"
+  },
   "navigation": {
     "language": "Lingua"
   },
@@ -6,7 +11,14 @@
     "eyebrow": "Un po’ di magia tra formati",
     "title": "Un file. Tante possibilità.",
     "description": "Combina file diversi in uno solo. Cambia estensione. Scopri un altro lato.",
-    "privacy": "I tuoi file restano sul tuo dispositivo"
+    "privacy": "I tuoi file restano sul tuo dispositivo",
+    "guideTitle": "Un file. Più formati.",
+    "guideDescription": "Un file poliglotta funziona come più formati. Ogni programma compatibile legge la parte che riconosce.",
+    "stepChoose": "Scegli file di almeno due tipi supportati.",
+    "stepCombine": "Combinali localmente sul tuo dispositivo.",
+    "stepDownload": "Scarica il file con l’estensione desiderata e aprilo con un programma compatibile.",
+    "showGuide": "Come funziona",
+    "hideGuide": "Torna al titolo"
   },
   "generator": {
     "filesTitle": "I tuoi file",
@@ -19,7 +31,6 @@
     "html": "HTML",
     "pdf": "PDF",
     "archive": "Archivi",
-    "selectionHint": "Combina due o più tipi di file supportati.",
     "combine": "Combina file",
     "outputTitle": "Il tuo file poliglotta",
     "outputEmptyTitle": "Un nuovo lato per ogni file",
@@ -27,13 +38,13 @@
     "outputHint": "Un solo download. Modi diversi di aprirlo."
   },
   "availability": {
-    "MEDIA_SLOT_OCCUPIED": "Audio e video condividono uno slot: scegli un file audio oppure un file video. Rimuovi o sostituisci il file multimediale selezionato per sceglierne un altro.",
-    "FORMAT_RESOURCE_LIMIT": "Rimuovi un file prima di aggiungerne un altro.",
-    "COMBINATION_UNSUPPORTED": "La compatibilità di questa combinazione non è stata verificata.",
-    "ROLE_CONFLICT": "Questo ruolo è già occupato. Rimuovi o sostituisci il file selezionato.",
-    "IMPLEMENTATION_UNAVAILABLE": "Questa funzionalità di input non è disponibile.",
-    "INPUT_AMBIGUOUS": "Assegna prima un ruolo al file ambiguo.",
-    "TOTAL_TOO_LARGE": "Rimuovi dei file per liberare spazio entro il limite totale."
+    "MEDIA_SLOT_OCCUPIED": "Audio e video condividono uno slot.",
+    "FORMAT_RESOURCE_LIMIT": "Limite di file raggiunto.",
+    "COMBINATION_UNSUPPORTED": "Combinazione non verificata.",
+    "ROLE_CONFLICT": "Già selezionato.",
+    "IMPLEMENTATION_UNAVAILABLE": "Non ancora supportato.",
+    "INPUT_AMBIGUOUS": "Assegna un ruolo al file ambiguo.",
+    "TOTAL_TOO_LARGE": "Limite totale raggiunto."
   },
   "footer": {
     "inspired": "Ispirato a",
@@ -46,8 +57,6 @@
   "ui": {
     "drop": "Trascina i file nella pagina, oppure sceglili qui sotto.",
     "example": "Prova un esempio",
-    "advanced": "Contenuti aggiuntivi",
-    "auxiliaryHint": "ZIP delle risorse, dati da accodare e dati di intestazione non contano come un altro formato. L’ordine selezionato determina sovrascritture e accodamenti.",
     "selected": "File selezionati",
     "role": "Ruolo",
     "replace": "Sostituisci",
@@ -56,7 +65,6 @@
     "references": "Alcuni riferimenti non sono stati incorporati. Sostituisci le risorse o scegli esplicitamente di mantenere questi riferimenti.",
     "allowReferences": "Continua mantenendo i riferimenti non risolti",
     "collisions": "Questi percorsi vengono sovrascritti dall’archivio selezionato successivamente:",
-    "headerSpace": "Spazio disponibile nell’intestazione",
     "logs": "Scarica diagnostica",
     "issue": "Apri una segnalazione su GitHub",
     "cancel": "Annulla",
@@ -65,21 +73,24 @@
     "extension": "Estensione",
     "download": "Scarica file",
     "sameBytes": "Ogni estensione scarica gli stessi byte. La compatibilità dipende dal programma; conserva i file originali.",
-    "reorder": "Riordina file",
+    "reorder": "Riordina archivio",
+    "archiveOrder": "Gli archivi successivi sovrascrivono i percorsi uguali. Trascina gli archivi per cambiarne l'ordine.",
     "reorderHint": "Trascina la maniglia per riordinare. Quando la maniglia ha il focus, usa le frecce Su e Giù.",
     "reordered": "Spostato alla posizione {{position}} di {{count}}.",
-    "busyReason": "Attendi il termine dell’operazione in corso oppure annullala."
+    "busyReason": "Elaborazione in corso. Attendi o annulla.",
+    "addAssets": "Aggiungi ZIP delle risorse",
+    "replaceAssets": "Sostituisci ZIP delle risorse",
+    "removeAssets": "Rimuovi ZIP delle risorse",
+    "assetHint": "Immagini, stili, font e script facoltativi per questo HTML."
   },
   "role": {
-    "auto": "Rilevamento automatico",
+    "auto": "Automatico",
     "image": "Immagine",
     "media": "Audio / video",
     "html": "HTML",
     "pdf": "PDF",
     "archive": "Archivio",
-    "html-assets": "ZIP risorse HTML",
-    "appendable": "Dati da accodare",
-    "extra-header": "Dati di intestazione"
+    "html-assets": "ZIP risorse HTML"
   },
   "reference": {
     "missing": "Risorsa mancante",
@@ -114,11 +125,11 @@
     "INPUT_TOO_LARGE": "Ogni file deve essere al massimo 1 GiB. Scegli un file più piccolo.",
     "TOTAL_TOO_LARGE": "I file superano 2 GiB complessivi. Rimuovi o sostituisci alcuni file.",
     "INPUT_EMPTY": "Un file è vuoto. Rimuovilo o scegli un file non vuoto.",
-    "INPUT_UNKNOWN": "Formato sconosciuto. Assegna un ruolo aggiuntivo o scegli un file supportato.",
+    "INPUT_UNKNOWN": "Tipo di file non riconosciuto. Scegli un file supportato.",
     "INPUT_AMBIGUOUS": "Sono stati rilevati più formati. Assegna esplicitamente il ruolo desiderato.",
     "INPUT_HINT_ONLY": "Solo nome o tipo MIME suggeriscono questo formato; è ancora necessaria la verifica della struttura.",
     "ROLE_REASSIGNED": "Il ruolo esplicito sostituisce il rilevamento. Il formato selezionato verrà verificato.",
-    "ROLE_CONFLICT": "Mantieni un file per ruolo, tranne archivi e dati da accodare. Audio e video condividono un solo posto.",
+    "ROLE_CONFLICT": "Mantieni un file per ruolo, tranne gli archivi. Audio e video condividono uno slot.",
     "MISSING_HTML": "Lo ZIP delle risorse richiede un file HTML. Aggiungi HTML o cambia il ruolo dello ZIP.",
     "MINIMUM_FAMILIES": "Scegli almeno due famiglie di formati supportate diverse.",
     "IMPLEMENTATION_UNAVAILABLE": "Questa funzionalità non è implementata. Scegli un altro ruolo.",
@@ -136,8 +147,6 @@
     "HTML_UNRESOLVED": "Alcuni riferimenti HTML non sono risolti. Fornisci le risorse o continua esplicitamente senza modificarli.",
     "HTML_ASSET_INVALID": "Una risorsa HTML/CSS non è valida o supportata. Controlla codifica e sintassi.",
     "HTML_ENCODING": "L’HTML deve usare UTF-8 valido senza caratteri NUL. Salva nuovamente il file in UTF-8.",
-    "HEADER_SPACE": "I dati aggiuntivi non entrano nell’intestazione selezionata. Riduci i dati o accodali.",
-    "HEADER_CONTENT": "I dati di intestazione contengono delimitatori di commento HTML. Accodali invece.",
     "FORMAT_RESOURCE_LIMIT": "È stato superato un limite di metadati, analisi o elaborazione. Usa file più piccoli o semplici; consulta le note di compatibilità nel sorgente.",
     "OFFSET_OVERFLOW": "Gli offset del contenitore non possono rappresentare il risultato. Usa file più piccoli.",
     "COMBINATION_UNSUPPORTED": "Questa combinazione non è stata verificata. Rimuovi o riassegna un file.",
@@ -171,9 +180,6 @@
     "AUDIO_CHANNELS": "La disposizione dei canali AAC non è supportata. Usa una configurazione esplicita supportata."
   },
   "offline": {
-    "ready": "Pronto per la riapertura offline",
-    "update": "Aggiornamento pronto. Ricaricare elimina la selezione e il risultato.",
-    "reload": "Ricarica applicazione",
     "large": "Elaborazione grande: spazio temporaneo stimato"
   }
 }

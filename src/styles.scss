@@ -42,6 +42,12 @@ body {
   margin: 0;
 }
 
+.startup-content {
+  max-width: 70rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
 // Apply the lower bound to viewport width; a vertical scrollbar must not raise it to 335px.
 @media (width < 320px) {
   body { min-width: 320px; }
@@ -114,6 +120,10 @@ bhw-choice .mat-mdc-select-trigger {
 bhw-choice .mat-mdc-select-trigger {
   padding-block: 0.65rem;
 }
+bhw-choice.compact .mat-mdc-select-trigger {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.625rem;
+}
 bhw-choice mat-select:not(.mat-mdc-select-disabled):hover .mat-mdc-select-trigger,
 bhw-choice mat-select:focus-visible .mat-mdc-select-trigger,
 bhw-choice mat-select.mat-select-open .mat-mdc-select-trigger,
@@ -143,6 +153,12 @@ html .cdk-overlay-pane div.bhw-select-panel.mat-mdc-select-panel {
   .mat-mdc-option.mdc-list-item--selected {
     background: color-mix(in srgb, $accent 18%, transparent);
   }
+}
+
+html .cdk-overlay-pane div.bhw-select-panel-compact.mat-mdc-select-panel .mat-mdc-option {
+  min-height: 2.5rem;
+  padding-inline: 0.625rem;
+  font-size: 0.875rem;
 }
 
 .mat-mdc-tooltip .mat-mdc-tooltip-surface {

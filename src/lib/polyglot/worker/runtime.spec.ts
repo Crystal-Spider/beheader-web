@@ -38,4 +38,11 @@ describe('worker runtime', () => {
     await new WorkerRuntime(response => { messages.push(response); }).receive(message);
     expect(messages.at(-1)).toMatchObject({type: 'failed', diagnostic: {code: 'INVALID_REQUEST'}});
   });
+
+  it.each(['appendable', 'extra-header'])('rejects the removed %s input role at the worker boundary', async role => {
+    const messages: WorkerResponse[] = [];
+    const message = {type: 'run', jobId: crypto.randomUUID(), request: {operation: 'generate', inputs: [{id: 'a', file: new File(['data'], 'payload.bin'), role}]}};
+    await new WorkerRuntime(response => { messages.push(response); }).receive(message);
+    expect(messages).toEqual([{type: 'failed', jobId: message.jobId, diagnostic: {code: 'INVALID_REQUEST', severity: 'error'}}]);
+  });
 });

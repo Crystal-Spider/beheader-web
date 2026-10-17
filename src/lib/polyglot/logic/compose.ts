@@ -19,12 +19,10 @@ export interface PreparedComposition {
   readonly html?: {readonly source: InputSource; readonly bom: number};
   readonly pdf?: {readonly source: InputSource; readonly info: PdfInfo};
   readonly archives?: readonly ArchiveInfo[];
-  readonly appendables?: readonly InputSource[];
-  readonly header?: InputSource;
 }
 
 /**
- * Checks roles before expensive format validation; later milestones expand the matrix.
+ * Checks roles before expensive format validation against the verified family matrix.
  * @param {Inspection} inspection Current input metadata and role decisions.
  * @param {ProcessingContext} context Cancellation and progress.
  * @returns {CompositionPlan} Provisional plan, requiring structure validation before readiness.
@@ -34,7 +32,7 @@ export function planComposition(inspection: Inspection, context: ProcessingConte
   const diagnostics = [...inspection.diagnostics];
   const roles = inspection.inputs.map(input => input.role);
   const families = FORMAT_FAMILIES.filter(family => roles.includes(family));
-  for (const role of ['image', 'media', 'html', 'pdf', 'html-assets', 'extra-header'] as const) {
+  for (const role of ['image', 'media', 'html', 'pdf', 'html-assets'] as const) {
     if (roles.filter(value => value === role).length > 1) {
       diagnostics.push({code: 'ROLE_CONFLICT', severity: 'error', details: {role}});
     }
@@ -65,8 +63,6 @@ export async function prepareComposition(inspection: Inspection, sources: readon
   let pdf: PreparedComposition['pdf'];
   const archives: ArchiveInfo[] = [];
   let assets: ArchiveInfo | undefined;
-  const appendables: InputSource[] = [];
-  let header: InputSource | undefined;
   for (const [index, description] of inspection.inputs.entries()) {
     const source = sources.find(source => source.id === description.id);
     if (!source || source.reader.size !== description.size) { throw new ProcessingError({code: 'INVALID_REQUEST', severity: 'error'}); }
@@ -86,10 +82,6 @@ export async function prepareComposition(inspection: Inspection, sources: readon
         archives.push(await inspectArchive(source, context));
       } else if (description.role === 'html-assets') {
         assets = await inspectArchive(source, context);
-      } else if (description.role === 'appendable') {
-        appendables.push(source);
-      } else if (description.role === 'extra-header') {
-        header = source;
       }
     } catch(error) {
       const diagnostic = diagnose(error);
@@ -108,14 +100,6 @@ export async function prepareComposition(inspection: Inspection, sources: readon
       if (references.length) { diagnostics.push({code: 'HTML_UNRESOLVED', severity: options.allowUnresolved ? 'warning' : 'error', details: {count: references.length}}); }
     } catch(error) { diagnostics.push(diagnose(error, 'HTML_ASSET_INVALID')); }
   }
-  const headerSpace = 256 - headerPayloadOffset(!!html, pdf?.info);
-  if (header) {
-    if (header.reader.size > headerSpace) { diagnostics.push({code: 'HEADER_SPACE', severity: 'error', details: {available: headerSpace}}); }
-    else if (html) {
-      const bytes = await header.reader.read(0, header.reader.size, context.signal);
-      if (/--!?>|<!--/.test(new TextDecoder().decode(bytes))) { diagnostics.push({code: 'HEADER_CONTENT', severity: 'error'}); }
-    }
-  }
   let collisions: CompositionPlan['collisions'] = [];
   let expanded = 0;
   try {
@@ -133,23 +117,12 @@ export async function prepareComposition(inspection: Inspection, sources: readon
     ...(archives.length ? [{family: 'archive' as const, extensions: ['zip']}] : [])
   ] : [];
   const encodedMedia = media && 'info' in media ? media.source.reader.size - media.info.ftyp.size : 0;
-  const base = 256 + encodedMedia + (html?.source.reader.size ?? 0) + (pdf?.info.startxref ?? 0) + appendables.reduce((sum, source) => sum + source.reader.size, 0);
+  const base = 256 + encodedMedia + (html?.source.reader.size ?? 0) + (pdf?.info.startxref ?? 0);
   const audioBytes = media && 'audio' in media ? Math.ceil(media.audio.duration * 192000 / 8) : 0;
   const temporaryBytes = base + expanded * 2 + audioBytes * 2 + (image ? image.info.width * image.info.height * 4 : 0) + 1024 * 1024;
   const resources = {large: sources.some(source => source.reader.size > LARGE_FILE_THRESHOLD) || temporaryBytes > LARGE_FILE_THRESHOLD, temporaryBytes, minimumBytes: base + expanded};
   return {
-    plan: {...initial, diagnostics, interpretations, ready, collisions, references, headerSpace, resources, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
-    ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives, appendables, ...(header ? {header} : {})
+    plan: {...initial, diagnostics, interpretations, ready, collisions, references, resources, archives: archives.map(archive => ({inputId: archive.source.id, entries: archive.entries.length, expandedSize: archive.expandedSize}))},
+    ...(image ? {image} : {}), ...(media ? {media} : {}), ...(html ? {html} : {}), ...(pdf ? {pdf} : {}), archives
   };
-}
-
-/**
- * Calculates free header space after the actual selected bootstrap/PDF framing.
- * @param {boolean} html Whether HTML requires a bootstrap comment.
- * @param {PdfInfo | undefined} pdf Optional classic PDF object framing.
- * @returns {number} First free byte within the fixed 256-byte header.
- */
-export function headerPayloadOffset(html: boolean, pdf?: PdfInfo): number {
-  if (pdf) { return (html ? 80 : 22) + new TextEncoder().encode(`\n${pdf.header}${pdf.size} 0 obj\n<</Length `).length + 10 + new TextEncoder().encode('>>\nstream\n').length; }
-  return html ? 22 + new TextEncoder().encode('><meta charset=utf-8><style>body{font-size:0}</style><!--').length : 22;
 }

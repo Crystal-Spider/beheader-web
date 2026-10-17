@@ -8,7 +8,7 @@ test('explains unavailable badges on hover and keyboard focus, then enables them
   await page.getByRole('button', {name: 'Try an example', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
   const audio = page.locator('.format-list li').filter({has: page.getByRole('button', {name: 'Audio', exact: true})});
-  const reason = 'Audio and video share one slot: choose one audio file or one video file. Remove or replace the selected media file to choose another.';
+  const reason = 'Audio and video share one slot.';
   await expect(audio).toHaveCSS('cursor', 'not-allowed');
   await audio.hover();
   await expect(page.locator('.mat-mdc-tooltip-surface')).toHaveText(reason);
@@ -27,55 +27,43 @@ test('explains unavailable badges on hover and keyboard focus, then enables them
   await expect(audio).not.toHaveAttribute('tabindex');
 });
 
-test('animates additional payloads in both directions and keeps closed controls inert', async({page}) => {
+test('offers a full-width example button with an icon and no additional-payload panel', async({page}) => {
   await page.goto('./');
-  const expansion = page.locator('bhw-expansion');
-  const toggle = expansion.getByRole('button', {name: 'Additional payloads', exact: true});
-  const content = expansion.locator('.collapsible');
-  await expect(content).toHaveAttribute('inert', '');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(content).not.toHaveAttribute('inert');
-  await expect.poll(async() => (await content.boundingBox())!.height).toBeGreaterThan(40);
-  await expect.poll(async() => content.evaluate(element => element.getAnimations().length)).toBe(0);
-  const expandedHeight = (await content.boundingBox())!.height;
-  const middle = await toggle.evaluate(async element => {
-    (element as HTMLElement).click();
-    await new Promise(resolve => setTimeout(resolve, 80));
-    return element.nextElementSibling!.getBoundingClientRect().height;
-  });
-  expect(middle).toBeGreaterThan(0);
-  expect(middle).toBeLessThan(expandedHeight);
-  await expect(content).toHaveAttribute('inert', '');
-  await expect.poll(async() => (await content.boundingBox())!.height).toBe(0);
-  const opening = await toggle.evaluate(async element => {
-    (element as HTMLElement).click();
-    await new Promise(resolve => setTimeout(resolve, 80));
-    return element.nextElementSibling!.getBoundingClientRect().height;
-  });
-  expect(opening).toBeGreaterThan(0);
-  expect(opening).toBeLessThan(expandedHeight);
+  const example = page.getByRole('button', {name: 'Try an example', exact: true});
+  const combine = page.getByRole('button', {name: 'Combine files', exact: true});
+  expect((await example.boundingBox())!.width).toBe((await combine.boundingBox())!.width);
+  await expect(example.locator('bhw-icon')).toBeVisible();
+  await expect(example.locator('mat-icon')).toHaveAttribute('data-mat-icon-name', 'example');
+  await expect(combine.locator('mat-icon')).toHaveAttribute('data-mat-icon-name', 'magic');
+  await expect(combine).toHaveCSS('font-size', await example.evaluate(element => getComputedStyle(element).fontSize));
+  await expect(page.getByText('Combine two or more supported file types.', {exact: true})).toHaveCount(0);
+  await expect(page.locator('bhw-expansion')).toHaveCount(0);
 });
 
-test('sorts file cards by dragging a dedicated handle with a stable final order and faint placeholder', async({page}) => {
+test('sorts only archive cards by dragging with a stable final order and faint placeholder', async({page}) => {
   await page.route('**/worker-*.js', async route => {
     await new Promise(resolve => setTimeout(resolve, 500));
     await route.continue();
   });
   await page.goto('./');
-  await page.getByTestId('file-picker').setInputFiles(['e2e/fixture/classic.pdf', 'e2e/fixture/first.zip', 'e2e/fixture/second.zip']);
+  await page.getByTestId('file-picker').setInputFiles(['e2e/fixture/first.zip', 'e2e/fixture/classic.pdf', 'e2e/fixture/second.zip']);
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
   const source = page.getByRole('article', {name: 'second.zip', exact: true});
-  const target = page.getByRole('article', {name: 'classic.pdf', exact: true});
+  const target = page.getByRole('article', {name: 'first.zip', exact: true});
+  await expect(page.getByRole('article', {name: 'classic.pdf', exact: true}).locator('.drag-handle')).toHaveCount(0);
   // Center the whole list so the destination stays inside Firefox's viewport during release.
   await page.locator('.selected-files').evaluate(element => element.scrollIntoView({block: 'center'}));
-  const handle = await source.getByRole('button', {name: 'Reorder file', exact: true}).boundingBox();
+  const handle = await source.getByRole('button', {name: 'Reorder archive', exact: true}).boundingBox();
   const destination = await target.boundingBox();
   await page.mouse.move(handle!.x + handle!.width / 2, handle!.y + handle!.height / 2);
   await page.mouse.down();
   await page.mouse.move(handle!.x + handle!.width / 2, destination!.y + 10, {steps: 15});
   await expect(page.locator('.cdk-drag-placeholder')).toHaveCSS('opacity', '0.2');
   await expect(page.locator('.cdk-drag-preview')).toBeVisible();
+  const preview = page.locator('.cdk-drag-preview');
+  const previewRole = (await preview.locator('bhw-choice').boundingBox())!;
+  const previewMetadata = (await preview.locator('.file-metadata').boundingBox())!;
+  expect(previewMetadata.x + previewMetadata.width).toBeLessThan(previewRole.x);
   // Record every rendered frame while worker reinspection is deliberately delayed.
   await page.evaluate(() => {
     const frames: string[][] = [];
@@ -90,11 +78,11 @@ test('sorts file cards by dragging a dedicated handle with a stable final order 
     requestAnimationFrame(sample);
   });
   await page.mouse.up();
-  await expect(page.locator('.selected-file h3')).toHaveText(['second.zip', 'classic.pdf', 'first.zip']);
+  await expect(page.locator('.selected-file h3')).toHaveText(['second.zip', 'first.zip', 'classic.pdf']);
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
   const frames = await page.evaluate(() => (window as unknown as {bhwOrderFrames: string[][]}).bhwOrderFrames);
   expect(frames.length).toBeGreaterThan(0);
-  expect(frames.every(frame => frame.join() === 'second.zip,classic.pdf,first.zip')).toBe(true);
+  expect(frames.every(frame => frame.join() === 'second.zip,first.zip,classic.pdf')).toBe(true);
   await target.getByRole('combobox', {name: 'Role', exact: true}).click();
   await expect(page.getByRole('listbox')).toHaveClass(/bhw-select-panel/);
   await expect(page.getByRole('listbox')).toHaveCSS('border-radius', '16px');
@@ -108,7 +96,10 @@ for (const width of [320, 1280]) {
     await page.getByRole('button', {name: 'Try an example', exact: true}).click();
     await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
     const card = page.getByRole('article', {name: 'picture.png', exact: true});
-    for (const name of ['Reorder file', 'Remove', 'Replace']) {
+    await expect(card.locator('.drag-handle')).toHaveCount(0);
+    await expect(page.locator('.drag-handle')).toHaveCount(2);
+    await expect(page.locator('.archive-order-hint')).toHaveCount(1);
+    for (const name of ['Remove', 'Replace']) {
       const button = card.getByRole('button', {name, exact: true});
       const outer = await button.boundingBox();
       const icon = await button.locator('svg').boundingBox();
@@ -120,8 +111,10 @@ for (const width of [320, 1280]) {
     const bounds = await card.boundingBox();
     expect(close!.x).toBe(replace!.x);
     expect(Math.abs(bounds!.y + bounds!.height - replace!.y - replace!.height - 9)).toBeLessThanOrEqual(1);
-    await expect(card).toHaveCSS('padding-left', '8px');
+    await expect(card).toHaveCSS('padding-left', width <= 560 ? '12px' : '16px');
     const role = card.getByRole('combobox', {name: 'Role', exact: true});
+    // Force scrolling now that the role menu has fewer supported entries.
+    await page.addStyleTag({content: '.bhw-select-panel-compact { max-height: 120px !important; }'});
     await role.click();
     const panel = page.getByRole('listbox');
     expect(await panel.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
@@ -201,11 +194,12 @@ test('keeps pointer cursors while selects are open and clears mouse-dismissed bo
 
 for (const language of ['en', 'it']) {
   test(`stays responsive through 320px with a reserved scrollbar in ${language}`, async({page}) => {
+    test.setTimeout(60000);
     await page.addInitScript(language => localStorage.setItem('bhw.language', language), language);
     await page.goto('./');
     await page.addStyleTag({content: 'html { scrollbar-gutter: stable; }'});
     const checkWidths = async(): Promise<void> => {
-      for (const width of [800, 770, 769, 390, 335, 334, 333, 321, 320]) {
+      for (const width of [800, 770, 769, 650, 620, 610, 600, 590, 390, 335, 334, 333, 321, 320]) {
         await page.setViewportSize({width, height: 800});
         const sizes = await page.evaluate(() => ({scroll: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth, body: document.body.getBoundingClientRect().width, available: document.documentElement.getBoundingClientRect().width}));
         expect(sizes.scroll, `scrollable page at ${width}px`).toBeLessThanOrEqual(sizes.viewport);
@@ -216,6 +210,47 @@ for (const language of ['en', 'it']) {
           return content.left >= bounds.left && content.right <= bounds.right;
         }));
         expect(badgesFit, `badge content at ${width}px`).toBe(true);
+        const cards = await page.locator('.selected-file').all();
+        for (const card of cards) {
+          const bounds = (await card.boundingBox())!;
+          const role = (await card.locator('bhw-choice').boundingBox())!;
+          const label = (await card.locator('.field-label').boundingBox())!;
+          const select = (await card.getByRole('combobox').boundingBox())!;
+          const metadata = (await card.locator('.file-metadata').boundingBox())!;
+          if (await card.locator('.drag-handle').count()) {
+            const drag = (await card.locator('.drag-handle').boundingBox())!;
+            expect(Math.abs(drag.y + drag.height / 2 - bounds.y - bounds.height / 2), `drag center at ${width}px`).toBeLessThanOrEqual(0.5);
+          }
+          expect(Math.abs(label.y + label.height / 2 - select.y - select.height / 2), `inline role at ${width}px`).toBeLessThanOrEqual(0.5);
+          expect(label.x + label.width).toBeLessThan(select.x);
+          if (width >= 800) {
+            expect(metadata.x + metadata.width).toBeLessThan(role.x);
+          } else if (width <= 390) {
+            expect(role.y).toBeGreaterThanOrEqual(metadata.y + metadata.height);
+          }
+        }
+        const outerCards = await page.locator('.selected-files > .selected-file, .selected-files > .archive-group').all();
+        if (outerCards.length) {
+          const example = (await page.locator('.example-button').boundingBox())!;
+          const first = (await outerCards[0]!.boundingBox())!;
+          const last = (await outerCards.at(-1)!.boundingBox())!;
+          const combine = (await page.getByRole('button', {name: language === 'it' ? 'Combina file' : 'Combine files', exact: true}).boundingBox())!;
+          expect(first.y - example.y - example.height, `example/card gap at ${width}px`).toBeCloseTo(16, 1);
+          const diagnostics = page.locator('.diagnostics');
+          const noticesBeforeCombine = await diagnostics.locator(':scope > *').count() ? diagnostics : page.locator('.archive-collisions');
+          if (await noticesBeforeCombine.count()) {
+            const notices = (await noticesBeforeCombine.boundingBox())!;
+            expect(notices.y).toBeGreaterThanOrEqual(last.y + last.height);
+            expect(combine.y - notices.y - notices.height, `notice/combine gap at ${width}px`).toBeCloseTo(16, 1);
+          } else {
+            expect(combine.y - last.y - last.height, `card/combine gap at ${width}px`).toBeCloseTo(16, 1);
+          }
+          for (let index = 1; index < outerCards.length; index++) {
+            const previous = (await outerCards[index - 1]!.boundingBox())!;
+            const current = (await outerCards[index]!.boundingBox())!;
+            expect(current.y - previous.y - previous.height, `card/card gap at ${width}px`).toBeCloseTo(12, 1);
+          }
+        }
       }
     };
     await expect(page.getByRole('separator')).toHaveCount(2);
@@ -224,7 +259,6 @@ for (const language of ['en', 'it']) {
     await page.getByRole('button', {name: language === 'it' ? 'Prova un esempio' : 'Try an example', exact: true}).click();
     const combine = page.getByRole('button', {name: language === 'it' ? 'Combina file' : 'Combine files', exact: true});
     await expect(combine).toBeEnabled();
-    await page.locator('bhw-expansion > button').click();
     await checkWidths();
     await combine.click();
     await expect(page.getByRole('button', {name: language === 'it' ? 'Scarica file' : 'Download file', exact: true})).toBeEnabled();

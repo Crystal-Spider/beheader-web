@@ -12,7 +12,7 @@ import {Icon} from '../icon/icon';
   templateUrl: './button.html',
   styleUrl: './button.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {'[class.block]': 'block()', '[class.compact]': 'compact()'}
+  host: {'[class.block]': 'block()', '[class.compact]': 'compact()', '[class.small]': 'size() === "small"'}
 })
 export class Button {
   /**
@@ -38,6 +38,12 @@ export class Button {
    * @type {InputSignal<'filled' | 'outlined'>}
    */
   public readonly appearance = input<'filled' | 'outlined'>('filled');
+
+  /**
+   * Visual size for primary and secondary actions.
+   * @type {InputSignal<'normal' | 'small'>}
+   */
+  public readonly size = input<'normal' | 'small'>('normal');
 
   /**
    * Whether to fill the available width.

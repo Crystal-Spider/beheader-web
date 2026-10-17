@@ -1,6 +1,6 @@
 {
   "name": "beheader-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "A browser-only polyglot generator inspired by Beheader.",
@@ -22,6 +22,7 @@
     "ng": "ng",
     "serve": "ng serve",
     "build": "ng build",
+    "icons:generate": "node scripts/create-icons.mjs",
     "watch": "ng build --watch --configuration development",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "ngc --project tsconfig.app.json --noEmit && tsc --project tsconfig.tools.json --noEmit && tsc --project tsconfig.worker.json --noEmit",

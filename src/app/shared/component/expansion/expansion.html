@@ -1,2 +1,0 @@
-<button mat-button type="button" [attr.aria-controls]="contentId" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())"><span class="heading-content"><bhw-icon name="expand" [class.expanded]="expanded()" /><span>{{ label() }}</span></span></button>
-<div class="collapsible" [attr.aria-hidden]="!expanded()" [class.expanded]="expanded()" [id]="contentId" [inert]="!expanded()"><div class="inner"><div class="content"><ng-content /></div></div></div>

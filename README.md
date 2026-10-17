@@ -1,19 +1,28 @@
 # Beheader Web
 
-A local browser app that combines two or more supported format families into one polyglot file. Download the same bytes with different extensions to open their different interpretations. Inspired by [Beheader](https://github.com/p2r3/beheader), by p2r3; this is an independent, unaffiliated project.
+A local browser app that combines two or more supported format families into one polyglot file. Download the same bytes with different extensions to open their different interpretations. Inspired by [Beheader](https://github.com/p2r3/beheader), by [p2r3](https://github.com/p2r3); this is an independent, unaffiliated project.
 
-**Release preparation:** generation, static HTML asset bundling, audio conversion, English/Italian localization, offline reopening and large-file I/O are implemented. Milestone 10 automated acceptance and release preparation are complete; real Safari and Android results are still pending. The intended public URL is https://crystal-spider.github.io/beheader-web/; publication remains a separate action.
+**Release preparation:** generation, static HTML asset bundling, audio conversion, English/Italian localization, offline reopening and large-file I/O are implemented. Automated acceptance is complete; hands-on review and real Safari and Android results are still pending. The intended public URL is https://crystal-spider.github.io/beheader-web/; publication remains a separate action.
 
 ## Use the app
 
-1. Choose files or drop them anywhere on the page. Start with **Try an example** for an original picture, MP3 tone and HTML page.
+1. Choose files or drop them anywhere on the page. Start with **Try an example** for a localized picture, MP3 tone, HTML page, PDF and two archives with matching paths that demonstrate overwrite order.
 2. Include at least two different families: image, media, HTML, PDF and archive. Audio and video share one media slot; a video's existing soundtrack is allowed. Correct ambiguous roles using the file card's selector.
-3. Optionally supply an HTML asset ZIP, extra-header data or ordered appendables under **Additional payloads**. These do not count as another family. Resolve missing HTML assets or explicitly choose to retain unresolved references.
+3. Optionally attach an asset ZIP inside the HTML file card. It does not count as another family. Resolve missing HTML assets or explicitly choose to retain unresolved references.
 4. Combine the files, choose an output name and extension, then download. Each extension contains identical bytes. Use a compatible reader for that interpretation and retain the originals.
 
 Files stay on the device. There are no uploads, content editors or in-app previews. Uploaded HTML/scripts are never executed during processing. Generation does not fetch remote resources. Preferences are remembered; selected files and results disappear on reload/close.
 
-Compatible structures matter more than filenames: supported static images become PNG-in-ICO; H.264/AAC MP4 retains encoded media; common audio becomes AAC-LC MP4; PDFs need supported classic cross-reference tables; archives need supported ZIP structures. All 26 subsets of two or more families are covered by fixture checks. See the [image/media](MILESTONE-4.md), [PDF/archive](MILESTONE-5.md), [audio](MILESTONE-6.md) and [HTML asset](MILESTONE-7.md) reports for input scope and consumer limitations. Chromium and Firefox pass the complete combination matrix; Windows WebKit generation remains unverified because of its documented storage limitation.
+Compatible structures matter more than filenames. All 26 subsets of two or more families are covered by fixture checks in Chromium and Firefox. Individual consumers can still reject mixed-format files; keep the originals and test the applications you intend to use. Windows WebKit's test runner cannot open the required temporary storage, so its UI checks do not establish Safari generation support. Actual Safari/iOS and Android acceptance remains pending.
+
+| Family | Supported scope and limits |
+| --- | --- |
+| Image | Supported static PNG, JPEG, GIF, WebP and BMP inputs become transparent-capable PNG-in-ICO. Animation and multipage inputs are rejected. Full resolution is retained; Chromium's ICO decoder may reject entries larger than 256×256 even when other readers open them. |
+| Video | Compatible unencrypted, non-fragmented H.264 MP4 with optional AAC-LC audio. Encoded payloads and playback metadata are retained; video is not transcoded. Unsupported tracks and box layouts are rejected. |
+| Audio | Supported MP3, PCM/float WAV, Ogg Vorbis/Opus and AAC inputs become AAC-LC MP4 at 192 kb/s when conversion is needed. Compatible AAC is preserved. Decoding depends on browser capabilities; not every codec, channel layout or container variant is supported. |
+| HTML | UTF-8 HTML with an optional asset ZIP for static images, CSS, fonts and ordinary scripts. Supplied assets are inlined locally. Module graphs, dynamic requests and remote fetching are outside the bundler's scope; unresolved references require an explicit choice. |
+| PDF | Supported classic cross-reference tables. Cross-reference streams, incremental updates and encryption are rejected. Pages and offsets are retained using the supported structure subset. |
+| Archive | Supported classic ZIP with stored/deflated entries. Encrypted, split, ZIP64, corrupt and unsupported entry variants are rejected. Archives merge in the nested-card order; later matching paths win. Unsafe paths and file/directory conflicts are rejected. ZIP-derived Office/JAR/APK files receive archive treatment; application behavior, installation and signatures are unverified. |
 
 Inputs are limited to 1 GiB each and 2 GiB total; expanded archive contents must remain below 1 GiB per archive and after merging. The output limit is 2 GiB and live temporary storage is bounded to 4 GiB. These are best-effort limits, not a promise that every device can process the maximum. Files are read and written in bounded chunks using temporary browser storage, including above 512 MiB.
 
@@ -33,9 +42,11 @@ pnpm build
 pnpm preview
 ```
 
-Open http://127.0.0.1:4173/beheader-web/. Wait for **Ready to reopen offline**, close the page, then reopen the same URL with the network disabled. Offline reopening requires an initial successful cache, retained site data and HTTPS or localhost. The development server intentionally does not install the service worker. Updates offer an explicit reload action only while no job is active. Reload clears selected files and results.
+Open http://127.0.0.1:4173/beheader-web/ online and allow the initial cache to finish, then close the page and reopen the same URL with the network disabled. Offline reopening requires a successful initial cache, retained site data and HTTPS or localhost. The development server intentionally does not install the service worker. Normal navigation/reloading automatically checks for and caches new builds in the background; a subsequent page load uses the newest completely cached build. There is no offline-ready message or manual update control, and the app does not reload itself during use. Reloading clears selected files and results.
 
 Do not test offline/storage features through plain HTTP on a LAN IP: it is not a secure browser context.
+
+"Try an example" loads the set for the currently selected language. Edit localized filenames, HTML/PDF text and ZIP entries in `scripts/example-content.json`, then run `python scripts/create-example-documents.py` and rebuild. The script generates both language sets and `public/assets/example/manifest.json`; the image and instrumental tone share language-neutral bytes with translated selection filenames. Both sets are cached for offline use.
 
 ## Validate
 
@@ -66,9 +77,13 @@ Use `bhw-` selectors, `~bhw/...` aliases, separate HTML/SCSS, two-space indentat
 
 Transloco bundles English and Italian locally, detects browser language, falls back to English and remembers explicit selection. To add a language, extend `src/app/core/model/language.ts`, register its catalog in the translation loader and add a local flag. Catalog tests check key/interpolation parity; the diagnostic code contract is shared across languages.
 
-Processing exposes inspect, plan and generate operations with stable diagnostics, progress, cancellation and file-backed artifact references. One worker job is active at a time. Job UUID directories live only inside `beheader-web-polyglot-v1`; Web Locks protect live tabs during abandoned-job cleanup. See the milestone reports for format constraints, parser/resource limits and implementation evidence.
+Processing exposes inspect, plan and generate operations with stable diagnostics, progress, cancellation and file-backed artifact references. One worker job is active at a time. Job UUID directories live only inside `beheader-web-polyglot-v1`; Web Locks protect live tabs during abandoned-job cleanup. Format inspectors enforce additional structure/resource bounds; the processing tests and independent-reader scripts cover their contracts and generated outputs.
 
 ## Release and attribution
+
+The selected square transforming-tile application icon lives in `public/assets/brand/icon.svg`. Run `pnpm icons:generate` to reproduce the larger regular/header/favicon exports and safely padded maskable exports under `public/favicon`, including PNG, SVG, Apple-touch and multi-size ICO variants. The header, install metadata and sharing cards use these same generated assets.
+
+Search metadata is included in the initial HTML: a descriptive title, canonical URL, Open Graph/X cards, WebApplication JSON-LD and readable startup content for clients without JavaScript. English/Italian titles and sharing descriptions follow the runtime language choice; both share one canonical URL, so no separate language URLs are advertised. This single-page app omits a sitemap. A `robots.txt` would have to live at the domain root, outside this project's Pages directory, so none is included. No custom domain is required. Search Console verification and publication remain separate actions.
 
 `pnpm build` writes production assets directly to `docs/` beneath `/beheader-web/`. Generated bytes must remain unchanged for service-worker hashes. The [Pages workflow](.github/workflows/deploy.yml) verifies and uploads **committed `docs/`**; it installs no dependencies and performs no build. It is manual-only and restricted to `main`, so a push does not publish the app. After release authorization, configure the repository's Pages source as GitHub Actions and deliberately run the workflow. It has not been dispatched during implementation.
 

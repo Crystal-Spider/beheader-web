@@ -26,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideStore({[selectionFeature.name]: selectionFeature.reducer, [jobFeature.name]: jobFeature.reducer}),
     provideEffects(JobEffects),
+    // Cache updates on navigation; subsequent page loads adopt the latest complete build.
     provideServiceWorker('ngsw-worker.js', {enabled: !isDevMode(), registrationStrategy: 'registerImmediately'}),
     provideTransloco({
       config: {

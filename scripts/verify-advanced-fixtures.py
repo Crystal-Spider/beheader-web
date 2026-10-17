@@ -1,4 +1,4 @@
-"""Independently validate the all-family artifact containing Milestone 7 raw payloads."""
+"""Independently validate the all-family artifact with bundled local HTML assets."""
 import runpy
 import os
 from pathlib import Path
@@ -20,4 +20,4 @@ assert checks['render'](path, 'advanced') == checks['expected_pdf']
 with zipfile.ZipFile(path) as archive:
     assert {entry.filename: archive.read(entry) for entry in archive.infolist()} == checks['expected_zip']
     checks['verify_zip_offsets'](path, archive)
-print('Advanced payload artifact retains independent image, media, PDF, and ZIP interpretations')
+print('Bundled HTML artifact retains independent image, media, PDF, and ZIP interpretations')

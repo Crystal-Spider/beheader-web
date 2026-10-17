@@ -10,7 +10,7 @@ const checks = [
   ['Worker types', 'typescript/bin/tsc', ['--project', 'tsconfig.worker.json', '--noEmit']],
   ['Unit tests', 'vitest/vitest.mjs', ['run', '--passWithNoTests']],
   ['Production build', '@angular/cli/bin/ng.js', ['build']],
-  ['Chromium flows', '@playwright/test/cli.js', ['test']],
+  ['Chromium flows', '@playwright/test/cli.js', ['test', '--workers=3']],
   ['Acceptance browser matrix', '@playwright/test/cli.js', ['test', '--config', 'playwright.acceptance.config.ts', '--workers=3']],
   ['Audio browser matrix', '@playwright/test/cli.js', ['test', '--config', 'playwright.audio.config.ts', '--workers=3']]
 ];

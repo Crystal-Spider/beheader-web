@@ -4,6 +4,7 @@ import {TranslocoService} from '@jsverse/transloco';
 
 import {resolveLanguage} from '../logic/language';
 import {LANGUAGE_STORAGE_KEY, LanguageCode} from '../model/language';
+import {Seo} from './seo';
 
 /** Manages language selection without persisting any file or job data. */
 @Injectable({providedIn: 'root'})
@@ -23,8 +24,9 @@ export class LanguagePreferences {
   /**
    * @param {TranslocoService} transloco Runtime translation service.
    * @param {Document} document Browser document for locale and optional storage access.
+   * @param {Seo} seo Public page metadata, localized independently of selected files.
    */
-  public constructor(private readonly transloco: TranslocoService, @Inject(DOCUMENT) private readonly document: Document) {}
+  public constructor(private readonly transloco: TranslocoService, @Inject(DOCUMENT) private readonly document: Document, private readonly seo: Seo) {}
 
   /** Applies the saved or detected language before the root view renders. */
   public initialize(): void {
@@ -59,5 +61,6 @@ export class LanguagePreferences {
     this.selected.set(language);
     this.transloco.setActiveLang(language);
     this.document.documentElement.lang = language;
+    this.seo.localize(language);
   }
 }

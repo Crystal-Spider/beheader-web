@@ -1,0 +1,54 @@
+{
+  "en": [
+    {
+      "path": "picture.png",
+      "name": "picture.png"
+    },
+    {
+      "path": "en/page.html",
+      "name": "page.html"
+    },
+    {
+      "path": "tone.mp3",
+      "name": "tone.mp3"
+    },
+    {
+      "path": "en/document.pdf",
+      "name": "document.pdf"
+    },
+    {
+      "path": "en/archive-a.zip",
+      "name": "archive-a.zip"
+    },
+    {
+      "path": "en/archive-b.zip",
+      "name": "archive-b.zip"
+    }
+  ],
+  "it": [
+    {
+      "path": "picture.png",
+      "name": "immagine.png"
+    },
+    {
+      "path": "it/pagina.html",
+      "name": "pagina.html"
+    },
+    {
+      "path": "tone.mp3",
+      "name": "tono.mp3"
+    },
+    {
+      "path": "it/documento.pdf",
+      "name": "documento.pdf"
+    },
+    {
+      "path": "it/archivio-a.zip",
+      "name": "archivio-a.zip"
+    },
+    {
+      "path": "it/archivio-b.zip",
+      "name": "archivio-b.zip"
+    }
+  ]
+}

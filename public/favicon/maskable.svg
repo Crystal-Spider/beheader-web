@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <path fill="#101114" d="M0 0H512V512H0Z"/>
+  <g transform="translate(30.72 30.72) scale(0.88)">
+  <title>Beheader Web — transforming tile</title>
+  <defs>
+    <linearGradient id="lavender" x1="80" y1="80" x2="432" y2="432" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c58eff"/>
+      <stop offset="1" stop-color="#b77cf4"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="256" y1="200" x2="432" y2="432" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#faf8f5"/>
+      <stop offset="1" stop-color="#e8e4df"/>
+    </linearGradient>
+    <clipPath id="tile">
+      <rect x="80" y="80" width="352" height="352" rx="60"/>
+    </clipPath>
+  </defs>
+  <path fill="#101114" d="M0 0H512V512H0Z"/>
+  <g clip-path="url(#tile)">
+    <path fill="url(#lavender)" d="M80 80H432V432H80Z"/>
+    <circle cx="145" cy="151" r="25" fill="#faf8f5"/>
+    <path fill="#101114" d="M80 290 193 154Q204 141 215 154L243 191Q253 204 265 192L277 179Q286 170 296 180L350 234V380H80Z"/>
+    <path fill="url(#paper)" d="M80 348C130 292 306 262 432 130V432H80Z"/>
+    <g fill="#101114">
+      <rect x="177" y="295" width="215" height="30" rx="15"/>
+      <rect x="177" y="348" width="183" height="30" rx="15"/>
+    </g>
+  </g>
+  </g>
+</svg>

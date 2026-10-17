@@ -3,7 +3,7 @@ import {INPUT_COUNT_LIMIT, INPUT_LIMIT, matches, TOTAL_INPUT_LIMIT} from '../io/
 import {checkCancelled} from './diagnostic';
 
 /** Supported role names; auxiliary roles always require explicit assignment. */
-export const INPUT_ROLES: readonly InputRole[] = ['image', 'media', 'html', 'pdf', 'archive', 'html-assets', 'appendable', 'extra-header'];
+export const INPUT_ROLES: readonly InputRole[] = ['image', 'media', 'html', 'pdf', 'archive', 'html-assets'];
 
 /**
  * Rejects all statically known size/id violations before any source is read.
@@ -115,8 +115,8 @@ export async function inspectInputs(sources: readonly InputSource[], context: Pr
     if (!source.role && !families.length) { diagnostics.push({code: 'INPUT_UNKNOWN', severity: 'error', inputId: source.id}); }
     if (!source.role && families.length > 1) { diagnostics.push({code: 'INPUT_AMBIGUOUS', severity: 'error', inputId: source.id}); }
     if (candidates.length && candidates.every(candidate => candidate.evidence === 'hint')) { diagnostics.push({code: 'INPUT_HINT_ONLY', severity: 'warning', inputId: source.id}); }
-    if (source.role && !['html-assets', 'appendable', 'extra-header'].includes(source.role)
-      && (!families.includes(source.role as FormatCandidate['family']) || families.length > 1)) {
+    if (source.role && source.role !== 'html-assets'
+      && (!families.includes(source.role) || families.length > 1)) {
       diagnostics.push({code: 'ROLE_REASSIGNED', severity: 'warning', inputId: source.id});
     }
     inputs.push({id: source.id, name: source.name, size: source.reader.size, candidates, role});

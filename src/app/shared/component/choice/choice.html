@@ -1,4 +1,4 @@
 <span class="field-label">{{ label() }}</span>
-<mat-select bhwSelectCursor panelClass="bhw-select-panel" [aria-label]="label()" [disabled]="disabled()" [value]="value()" (selectionChange)="changed.emit($event.value)">
+<mat-select bhwSelectCursor [aria-label]="label()" [disabled]="disabled()" [panelClass]="compact() ? ['bhw-select-panel', 'bhw-select-panel-compact'] : 'bhw-select-panel'" [value]="value()" (selectionChange)="changed.emit($event.value)">
   @for (option of options(); track option.value) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
 </mat-select>

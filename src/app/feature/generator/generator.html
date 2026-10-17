@@ -1,21 +1,11 @@
 <ng-container *transloco="let t">
   <div class="app-shell">
-    <header class="app-header">
-      <a class="wordmark" href="./">beheader<span> web</span></a>
-      <bhw-language-picker />
-    </header>
+    <bhw-header />
 
     <main id="content">
-      <section aria-labelledby="hero-title" class="hero">
-        <p class="eyebrow">{{ t('hero.eyebrow') }}</p>
-        <h1 id="hero-title">{{ t('hero.title') }}</h1>
-        <p class="hero-description">{{ t('hero.description') }}</p>
-        <p class="privacy"><bhw-icon name="privacy" />{{ t('hero.privacy') }}</p>
-      </section>
+      <bhw-title-card />
 
       @if (dragging()) { <div aria-hidden="true" class="drop-overlay">{{ t('ui.drop') }}</div> }
-      @if (offline.ready()) { <p class="metadata" data-testid="offline-ready">{{ t('offline.ready') }}</p> }
-      @if (offline.update()) { <p>{{ t('offline.update') }}</p><bhw-button [disabled]="job().busy" [label]="t('offline.reload')" (clicked)="offline.apply()" /> }
       @if (processing.storageDiagnostic(); as diagnostic) { <p class="metadata">{{ t('diagnostic.' + diagnostic.code) }}</p> }
       @if (job().plan?.resources?.large) { <p class="metadata">{{ t('offline.large') }} {{ size(job().plan?.resources?.temporaryBytes || 0) }}</p> }
       <input #picker data-testid="file-picker" hidden tabindex="-1" type="file" [attr.accept]="pickerAccept || accepted()" [attr.aria-label]="t('generator.choose')" [multiple]="true" (change)="picked(picker)">
@@ -45,23 +35,8 @@
           }
         </ul>
 
-        <div class="selection-toolbar">
-          <bhw-button appearance="outlined" [disabled]="job().busy" [label]="t('ui.example')" (clicked)="example()" />
-          <bhw-expansion [label]="t('ui.advanced')">
-            <p>{{ t('ui.auxiliaryHint') }}</p>
-            <div class="actions">
-              @for (role of auxiliaryRoles; track role) {
-                <bhw-button appearance="outlined" [disabled]="!auxiliaryEnabled(role)" [label]="t('role.' + role)" (clicked)="choose(picker, role)" />
-              }
-            </div>
-          </bhw-expansion>
-        </div>
-        <bhw-input-list [disabled]="job().busy" [inputs]="cards()" [roles]="roles()" (assigned)="session.assign($event.id, $event.role)" (removed)="session.remove($event)" (reordered)="reorder($event)" (replaced)="choose(picker, undefined, $event)" />
-        @for (input of inputs(); track input.id) {
-          @if (input.role === 'html') {
-            <bhw-text-field [disabled]="job().busy" [label]="t('ui.htmlPath')" [value]="session.options.htmlPath || input.name" (changed)="path($event)" />
-          }
-        }
+        <bhw-button appearance="outlined" class="example-button" icon="example" [block]="true" [disabled]="job().busy" [label]="t('ui.example')" (clicked)="example()" />
+        <bhw-input-list [assets]="assets()" [assetsEnabled]="assetsEnabled()" [disabled]="job().busy" [htmlPath]="session.options.htmlPath || ''" [inputs]="cards()" [roles]="roles()" (assetReplaced)="choose(picker, 'html-assets', $event)" (assetsRequested)="choose(picker, 'html-assets')" (assigned)="session.assign($event.id, $event.role)" (pathChanged)="path($event)" (removed)="session.remove($event)" (reordered)="reorder($event)" (replaced)="choose(picker, undefined, $event)" />
         @if (job().plan?.references?.length) {
           <div class="reference-panel">
             <p>{{ t('ui.references') }}</p>
@@ -71,9 +46,8 @@
         }
         @if (job().plan?.collisions?.length) {
           <p>{{ t('ui.collisions') }}</p>
-          <ul>@for (collision of job().plan?.collisions; track $index) { <li><code>{{ collision.path }}</code></li> }</ul>
+          <ul class="archive-collisions">@for (collision of job().plan?.collisions; track $index) { <li><code>{{ collision.path }}</code></li> }</ul>
         }
-        @for (input of inputs(); track input.id) { @if (input.role === 'extra-header') { <p class="metadata">{{ t('ui.headerSpace') }}: {{ job().plan?.headerSpace }} B</p> } }
         <div aria-live="polite" class="diagnostics">
           @for (diagnostic of job().diagnostics; track $index) {
             <p [class.error]="diagnostic.severity === 'error'"><code>{{ diagnostic.code }}</code> · {{ t('diagnostic.' + diagnostic.code) }}</p>
@@ -82,7 +56,6 @@
           @if (unexpected()) { <a rel="noopener noreferrer" target="_blank" [href]="issue()">{{ t('ui.issue') }}</a> }
         </div>
         <div class="combine-area">
-          <p>{{ t('generator.selectionHint') }}</p>
           @if (job().busy) {
             <div aria-live="polite" role="status">
               <p>{{ t('stage.' + (job().progress?.stage || 'plan')) }}</p>
@@ -107,7 +80,7 @@
               <bhw-text-field [disabled]="job().busy" [label]="t('ui.filename')" [value]="name()" (changed)="remember('name', $event)" />
               <bhw-choice [disabled]="job().busy" [label]="t('ui.extension')" [options]="variants()" [value]="selectedExtension()" (changed)="remember('extension', $event)" />
             </div>
-            <bhw-button icon="download" [disabled]="job().busy" [label]="t('ui.download')" (clicked)="download()" />
+            <bhw-button icon="download" [block]="true" [disabled]="job().busy" [label]="t('ui.download')" (clicked)="download()" />
             <ul>@for (interpretation of job().interpretations; track interpretation.family) { <li>{{ t('open.' + interpretation.family) }} ({{ interpretation.extensions.join(', ') }})</li> }</ul>
             <p class="metadata">{{ t('ui.sameBytes') }}</p>
           </div>

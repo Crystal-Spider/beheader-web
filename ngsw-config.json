@@ -6,7 +6,7 @@
       "name": "beheader-web-application",
       "installMode": "prefetch",
       "updateMode": "prefetch",
-      "resources": {"files": ["/index.html", "/*.js", "/*.css", "/assets/**"]}
+      "resources": {"files": ["/index.html", "/*.js", "/*.css", "/site.webmanifest", "/favicon/**", "/assets/**"]}
     }
   ],
   "dataGroups": []

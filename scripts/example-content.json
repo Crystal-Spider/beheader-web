@@ -1,0 +1,22 @@
+{
+  "en": {
+    "image": "picture.png",
+    "audio": "tone.mp3",
+    "html": {"name": "page.html", "title": "Beheader Web example", "heading": "One file. Many possibilities.", "greeting": "Hello! 🙂"},
+    "pdf": {"name": "document.pdf", "heading": "One file. Many possibilities.", "lines": ["Hello from the PDF.", "Open the same file as a ZIP, too."]},
+    "archives": [
+      {"name": "archive-a.zip", "entries": {"hello.txt": "Hello!\n", "a.txt": "From A.\n"}},
+      {"name": "archive-b.zip", "entries": {"hello.txt": "Hi!\n", "b.txt": "From B.\n"}}
+    ]
+  },
+  "it": {
+    "image": "immagine.png",
+    "audio": "tono.mp3",
+    "html": {"name": "pagina.html", "title": "Esempio di Beheader Web", "heading": "Un file. Tante possibilità.", "greeting": "Ciao! Bella città 🙂"},
+    "pdf": {"name": "documento.pdf", "heading": "Un file. Tante possibilità.", "lines": ["Un saluto dal PDF.", "Apri lo stesso file anche come ZIP."]},
+    "archives": [
+      {"name": "archivio-a.zip", "entries": {"ciao.txt": "Ciao!\n", "a.txt": "Da A.\n"}},
+      {"name": "archivio-b.zip", "entries": {"ciao.txt": "Salve!\n", "b.txt": "Da B.\n"}}
+    ]
+  }
+}

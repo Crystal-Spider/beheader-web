@@ -1,4 +1,5 @@
 import {Diagnostic} from '~bhw/polyglot/model/contract';
+import {version} from '../../../../../package.json';
 
 /**
  * Allowlisted diagnostic export intentionally excludes names, paths, URLs, details, and file bytes.
@@ -6,7 +7,7 @@ import {Diagnostic} from '~bhw/polyglot/model/contract';
  * @returns {string} Small human-readable downloadable report.
  */
 export function diagnosticReport(diagnostics: readonly Diagnostic[]): string {
-  return JSON.stringify({application: 'beheader-web', version: '0.1.0', browser: navigator.userAgent, diagnostics: diagnostics.slice(0, 30).map(({code, severity}) => ({code, severity}))}, null, 2);
+  return JSON.stringify({application: 'beheader-web', version, browser: navigator.userAgent, diagnostics: diagnostics.slice(0, 30).map(({code, severity}) => ({code, severity}))}, null, 2);
 }
 
 /**
@@ -16,7 +17,7 @@ export function diagnosticReport(diagnostics: readonly Diagnostic[]): string {
  */
 export function issueUrl(diagnostics: readonly Diagnostic[]): string {
   const codes = [...new Set(diagnostics.map(item => item.code))].slice(0, 8).join(', ');
-  return `https://github.com/Crystal-Spider/beheader-web/issues/new?${new URLSearchParams({title: 'Generation issue', body: `Beheader Web 0.1.0\nDiagnostic codes: ${codes}\n\nWhat happened?\n\nPlease review and attach the downloaded diagnostics if useful. Do not attach private input files.`})}`;
+  return `https://github.com/Crystal-Spider/beheader-web/issues/new?${new URLSearchParams({title: 'Generation issue', body: `Beheader Web ${version}\nDiagnostic codes: ${codes}\n\nWhat happened?\n\nPlease review and attach the downloaded diagnostics if useful. Do not attach private input files.`})}`;
 }
 
 /**

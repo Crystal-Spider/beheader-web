@@ -8,24 +8,24 @@ import {Store} from '@ngrx/store';
 import {Button} from '~bhw/shared/component/button/button';
 import {Choice} from '~bhw/shared/component/choice/choice';
 import {TextField} from '~bhw/shared/component/text-field/text-field';
-import {Expansion} from '~bhw/shared/component/expansion/expansion';
 import {Icon} from '~bhw/shared/component/icon/icon';
-import {LanguagePicker} from '~bhw/shared/component/language-picker/language-picker';
+import {Header} from '~bhw/core/component/header/header';
 import {Footer} from '~bhw/core/component/footer/footer';
 import {Processing} from '~bhw/core/service/processing';
-import {Offline} from '~bhw/core/service/offline';
 import {InputRole} from '~bhw/polyglot/model/contract';
 import {InputAvailability} from '~bhw/polyglot/logic/availability';
 import {INPUT_ROLES} from '~bhw/polyglot/logic/inspect';
 import {diagnose} from '~bhw/polyglot/logic/diagnostic';
+import {INPUT_COUNT_LIMIT, TOTAL_INPUT_LIMIT} from '~bhw/polyglot/io/bytes';
 import {selectionFeature} from './redux/selection';
 import {jobActions, jobFeature} from './redux/job';
 import {GeneratorSession} from './service/generator-session';
 import {diagnosticReport, issueUrl, outputName} from './logic/diagnostics';
 import {InputList} from './component/input-list/input-list';
+import {TitleCard} from './component/title-card/title-card';
 
 /** Complete local generator: metadata controls only, without uploaded-content previews. */
-@Component({selector: 'bhw-generator', imports: [TranslocoDirective, Button, Choice, TextField, Expansion, InputList, Icon, LanguagePicker, Footer, MatCheckboxModule, MatProgressBarModule, MatTooltipModule], templateUrl: './generator.html', styleUrl: './generator.scss', changeDetection: ChangeDetectionStrategy.OnPush})
+@Component({selector: 'bhw-generator', imports: [TranslocoDirective, Button, Choice, TextField, InputList, Icon, Header, Footer, TitleCard, MatCheckboxModule, MatProgressBarModule, MatTooltipModule], templateUrl: './generator.html', styleUrl: './generator.scss', changeDetection: ChangeDetectionStrategy.OnPush})
 export class Generator {
   /** @type {Signal<readonly InputAvailability[]>} */
   public readonly availability;
@@ -35,6 +35,10 @@ export class Generator {
   public readonly inputs;
   /** @type {Signal<readonly FileCard[]>} */
   public readonly cards;
+  /** @type {Signal<InputDescription | undefined>} */
+  public readonly assets;
+  /** @type {Signal<boolean>} */
+  public readonly assetsEnabled;
   /** @type {Signal<JobState>} */
   public readonly job;
   /** @type {WritableSignal<string>} */
@@ -53,22 +57,21 @@ export class Generator {
   private replacing: string | undefined;
   /** @type {string} */
   public pickerAccept = '';
-  /** @type {readonly InputRole[]} */
-  public readonly auxiliaryRoles: readonly InputRole[] = ['html-assets', 'appendable', 'extra-header'];
 
   /**
    * @param {Processing} processing Runtime worker and output owner.
    * @param {GeneratorSession} session Ephemeral file selection.
    * @param {Store} store Serializable state.
    * @param {TranslocoService} translations Runtime text.
-   * @param {Offline} offline Production caching and idle-only update gate.
    * @param {ChangeDetectorRef} changeDetector Commits drop ordering before the next browser paint.
    */
-  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService, public readonly offline: Offline, private readonly changeDetector: ChangeDetectorRef) {
+  public constructor(public readonly processing: Processing, public readonly session: GeneratorSession, private readonly store: Store, private readonly translations: TranslocoService, private readonly changeDetector: ChangeDetectorRef) {
     this.availability = store.selectSignal(selectionFeature.selectAvailability);
     this.accepted = store.selectSignal(selectionFeature.selectAcceptedTypes);
     this.inputs = store.selectSignal(selectionFeature.selectInputs);
-    this.cards = computed(() => this.inputs().map(input => ({...input, explicitRole: this.session.role(input.id)})));
+    this.cards = computed(() => this.inputs().filter(input => input.role !== 'html-assets' || !this.inputs().some(item => item.role === 'html')).map(input => ({...input, explicitRole: this.session.role(input.id)})));
+    this.assets = computed(() => this.inputs().find(input => input.role === 'html-assets'));
+    this.assetsEnabled = computed(() => this.inputs().length < INPUT_COUNT_LIMIT && this.inputs().reduce((sum, input) => sum + input.size, 0) < TOTAL_INPUT_LIMIT);
     this.job = store.selectSignal(jobFeature.selectJobState);
     this.extensions = computed(() => this.job().interpretations.flatMap(item => item.extensions));
     this.selectedExtension = computed(() => this.extensions().includes(this.extension()) ? this.extension() : this.extensions()[0] ?? '');
@@ -81,10 +84,14 @@ export class Generator {
    */
   public choose(picker: HTMLInputElement, role?: InputAvailability | InputRole, replacing?: string): void {
     if (this.job().busy) { return; }
-    this.pickingRole = typeof role === 'string' ? role : role?.family;
+    const selection = role ?? (replacing ? this.session.role(replacing) || undefined : undefined);
+    this.pickingRole = typeof selection === 'string' ? selection : selection?.family;
     this.replacing = replacing;
-    this.pickerAccept = typeof role === 'object' ? role.accept.join(',') : role === 'html-assets' ? '.zip' : role ? '' : replacing ? this.availability().flatMap(item => item.accept).join(',') : this.accepted();
-    picker.accept = this.pickerAccept; picker.multiple = !replacing; picker.click();
+    // Replacement includes the occupied slot's extensions and retains an explicit role.
+    this.pickerAccept = typeof selection === 'object' ? selection.accept.join(',') : selection === 'html-assets' ? '.zip'
+      : selection ? this.availability().filter(item => item.family === selection).flatMap(item => item.accept).join(',')
+        : replacing ? this.availability().flatMap(item => item.accept).join(',') : this.accepted();
+    picker.accept = this.pickerAccept; picker.multiple = !replacing && selection !== 'html-assets'; picker.click();
   }
 
   /**
@@ -121,7 +128,7 @@ export class Generator {
   /**
    * @param {{id: string; index: number}} event Pointer or keyboard ordering intent.
    * @param {string} event.id Selected file identity.
-   * @param {number} event.index Target position.
+   * @param {number} event.index Target archive position.
    */
   public reorder(event: {id: string; index: number}): void {
     this.session.move(event.id, event.index);
@@ -143,16 +150,7 @@ export class Generator {
   /**
    * @returns {readonly {value: string; label: string}[]} Translated role choices.
    */
-  public roles(): readonly {value: string; label: string}[] { return ['', ...INPUT_ROLES].map(value => ({value, label: this.translations.translate(`role.${value || 'auto'}`)})); }
-  /**
-   * @param {InputRole} role Auxiliary input role.
-   * @returns {boolean} Whether its cardinality/dependency permits another selection.
-   */
-  public auxiliaryEnabled(role: InputRole): boolean {
-    return !this.job().busy && this.inputs().length < 128 && this.inputs().reduce((sum, input) => sum + input.size, 0) < 2 * 1024 ** 3
-      && (role === 'appendable' || !this.inputs().some(input => input.role === role))
-      && (role !== 'html-assets' || this.inputs().some(input => input.role === 'html'));
-  }
+  public roles(): readonly {value: string; label: string}[] { return ['', ...INPUT_ROLES.filter(role => role !== 'html-assets')].map(value => ({value, label: this.translations.translate(`role.${value || 'auto'}`)})); }
   /**
    * @returns {readonly {value: string; label: string}[]} Actual output variants.
    */

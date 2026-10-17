@@ -1,14 +1,59 @@
 <ng-container *transloco="let t">
   <p class="visually-hidden" id="reorder-hint">{{ t('ui.reorderHint') }}</p>
-  <div cdkDropList cdkDropListOrientation="vertical" class="selected-files" role="group" [attr.aria-label]="t('ui.selected')" [cdkDropListData]="inputs()" [cdkDropListDisabled]="disabled()" (cdkDropListDropped)="drop($event)">
-    @for (input of inputs(); track input.id; let index = $index) {
-      <article cdkDrag cdkDragLockAxis="y" class="selected-file" [attr.aria-label]="input.name" [attr.data-file-id]="input.id" [cdkDragDisabled]="disabled()" [cdkDragStartDelay]="{mouse: 0, touch: 150}">
-        <bhw-icon-button cdkDragHandle class="drag-handle" description="reorder-hint" icon="drag" [cdkDragHandleDisabled]="disabled() || inputs().length < 2" [disabled]="disabled() || inputs().length < 2" [label]="t('ui.reorder')" (keydown.arrowdown)="keyboard($event, index, 1)" (keydown.arrowup)="keyboard($event, index, -1)" />
-        <div class="file-metadata"><h3>{{ input.name }}</h3><p>{{ size(input.size) }} · {{ t('role.' + (input.role || 'auto')) }}</p></div>
-        <bhw-icon-button class="remove-action" icon="close" [disabled]="disabled()" [label]="t('ui.remove')" (clicked)="removed.emit(input.id)" />
-        <bhw-choice [disabled]="disabled()" [label]="t('ui.role')" [options]="roles()" [value]="input.explicitRole" (changed)="assigned.emit({id: input.id, role: $event})" />
-        <bhw-icon-button class="replace-action" icon="replace" [disabled]="disabled()" [label]="t('ui.replace')" (clicked)="replaced.emit(input.id)" />
-      </article>
+  <div class="selected-files" role="group" [attr.aria-label]="t('ui.selected')">
+    @for (input of cards(); track input.role === 'archive' ? 'archive-group' : input.id) {
+      @if (input.role === 'archive') {
+        <section class="archive-group" [attr.aria-label]="t('generator.archive')">
+          <h3>{{ t('generator.archive') }} · {{ archives().length }}</h3>
+          @if (archives().length > 1) {
+            <p class="archive-order-hint">{{ t('ui.archiveOrder') }}</p>
+          }
+          <div cdkDropList cdkDropListOrientation="vertical" class="archive-files" [cdkDropListData]="archives()" [cdkDropListDisabled]="disabled() || archives().length < 2" (cdkDropListDropped)="drop($event)">
+            @for (archive of archives(); track archive.id) {
+              <article cdkDrag cdkDragLockAxis="y" class="selected-file archive-file" [attr.aria-label]="archive.name" [attr.data-file-id]="archive.id" [cdkDragDisabled]="disabled() || archives().length < 2" [cdkDragStartDelay]="{mouse: 0, touch: 150}" [class.reorderable]="archives().length > 1">
+                @if (archives().length > 1) {
+                  <bhw-icon-button cdkDragHandle class="drag-handle" description="reorder-hint" icon="drag" [disabled]="disabled()" [label]="t('ui.reorder')" (keydown.arrowdown)="keyboard($event, archive.id, 1)" (keydown.arrowup)="keyboard($event, archive.id, -1)" />
+                }
+                <div class="file-details">
+                  <div class="file-metadata"><h3>{{ archive.name }}</h3><p>{{ size(archive.size) }} · {{ t('role.archive') }}</p></div>
+                  <bhw-choice [compact]="true" [disabled]="disabled()" [inline]="true" [label]="t('ui.role')" [options]="roles()" [value]="archive.explicitRole" (changed)="assigned.emit({id: archive.id, role: $event})" />
+                </div>
+                <bhw-icon-button class="remove-action" icon="close" [disabled]="disabled()" [label]="t('ui.remove')" (clicked)="removed.emit(archive.id)" />
+                <bhw-icon-button class="replace-action" icon="replace" [disabled]="disabled()" [label]="t('ui.replace')" (clicked)="replaced.emit(archive.id)" />
+              </article>
+            }
+          </div>
+        </section>
+      } @else {
+        <article class="selected-file" [attr.aria-label]="input.name" [attr.data-file-id]="input.id">
+          <div class="file-details">
+            <div class="file-metadata"><h3>{{ input.name }}</h3><p>{{ size(input.size) }} · {{ t('role.' + (input.role || 'auto')) }}</p></div>
+            <bhw-choice [compact]="true" [disabled]="disabled()" [inline]="true" [label]="t('ui.role')" [options]="roles()" [value]="input.explicitRole" (changed)="assigned.emit({id: input.id, role: $event})" />
+          </div>
+          <bhw-icon-button class="remove-action" icon="close" [disabled]="disabled()" [label]="t('ui.remove')" (clicked)="removed.emit(input.id)" />
+          <bhw-icon-button class="replace-action" icon="replace" [disabled]="disabled()" [label]="t('ui.replace')" (clicked)="replaced.emit(input.id)" />
+          @if (input.role === 'html') {
+            <div class="html-assets" role="group" [attr.aria-label]="t('role.html-assets')">
+              @if (assets(); as asset) {
+                <div class="asset-file">
+                  <div><h4>{{ asset.name }}</h4><p>{{ size(asset.size) }} · {{ t('role.html-assets') }}</p></div>
+                  <div class="asset-actions">
+                    <bhw-icon-button icon="replace" [disabled]="disabled()" [label]="t('ui.replaceAssets')" (clicked)="assetReplaced.emit(asset.id)" />
+                    <bhw-icon-button icon="close" [disabled]="disabled()" [label]="t('ui.removeAssets')" (clicked)="removed.emit(asset.id)" />
+                  </div>
+                </div>
+                <bhw-text-field [disabled]="disabled()" [label]="t('ui.htmlPath')" [value]="htmlPath() || input.name" (changed)="pathChanged.emit($event)" />
+              }
+              <div class="asset-invitation">
+                @if (!assets()) {
+                  <bhw-button appearance="outlined" icon="archive" size="small" [disabled]="disabled() || !assetsEnabled()" [label]="t('ui.addAssets')" (clicked)="assetsRequested.emit()" />
+                }
+                <p>{{ t('ui.assetHint') }}</p>
+              </div>
+            </div>
+          }
+        </article>
+      }
     }
   </div>
 </ng-container>

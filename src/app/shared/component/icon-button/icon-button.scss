@@ -13,12 +13,33 @@ button {
   height: 2.75rem;
   padding: 0;
   border-radius: 50%;
-  color: $muted;
+  color: var(--bhw-icon-button-color, #{$muted});
 }
 button:not(:disabled):hover {
-  color: $accent;
+  color: var(--bhw-icon-button-hover-color, #{$accent});
+}
+button:focus-visible {
+  outline-color: var(--bhw-icon-button-focus-color, #{$accent});
 }
 bhw-icon {
   width: 1.5rem;
   height: 1.5rem;
+}
+.icon-stack {
+  display: grid;
+}
+.icon-stack bhw-icon {
+  grid-area: 1 / 1;
+  transition: opacity 280ms ease-in-out;
+}
+.alternate-icon, .alternate-shown .primary-icon {
+  opacity: 0;
+}
+.alternate-shown .alternate-icon {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-stack bhw-icon {
+    transition: none;
+  }
 }

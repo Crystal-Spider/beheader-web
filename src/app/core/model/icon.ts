@@ -13,10 +13,12 @@ export const ICON_FILES = {
   download: 'download',
   privacy: 'lock',
   magic: 'auto_awesome',
+  example: 'science',
   close: 'close',
   replace: 'change_circle',
   drag: 'drag_indicator',
-  expand: 'chevron_right',
+  sort: 'sort',
+  back: 'arrow_back',
   github: 'github',
   patreon: 'patreon',
   kofi: 'kofi'

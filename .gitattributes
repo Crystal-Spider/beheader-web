@@ -1,5 +1,6 @@
 # PDF fixture offsets depend on exact bytes, including CRLF and fixed-width xref spaces.
 e2e/fixture/*.pdf binary
+public/assets/example/**/*.pdf binary
 e2e/fixture/*.mp3 binary
 e2e/fixture/*.wav binary
 e2e/fixture/*.ogg binary
@@ -9,3 +10,4 @@ e2e/fixture/*.aac binary
 docs/*.js binary
 # Service-worker content hashes require every generated asset to survive checkout byte-for-byte.
 docs/** -text whitespace=cr-at-eol
+docs/assets/example/**/*.pdf binary

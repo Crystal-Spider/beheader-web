@@ -1,8 +1,8 @@
-/** Independently countable interpretations, distinct from auxiliary payload roles. */
+/** Independently countable interpretations, distinct from an HTML asset ZIP. */
 export type FormatFamily = 'image' | 'media' | 'html' | 'pdf' | 'archive';
 
-/** Auxiliary payloads never satisfy the minimum family count. */
-export type InputRole = FormatFamily | 'html-assets' | 'appendable' | 'extra-header';
+/** An HTML asset ZIP supports its owning document without adding an interpretation. */
+export type InputRole = FormatFamily | 'html-assets';
 
 /** Stable machine-readable diagnostics; presentation belongs to the application. */
 export type DiagnosticCode =
@@ -21,7 +21,7 @@ export type DiagnosticCode =
   | 'ARCHIVE_EXPANDED_LIMIT' | 'ARCHIVE_PATH' | 'ARCHIVE_COLLISION' | 'COMBINATION_UNSUPPORTED'
   | 'AUDIO_INVALID' | 'AUDIO_CODEC' | 'AUDIO_TRACKS' | 'AUDIO_CHANNELS'
   | 'AUDIO_DECODE_UNAVAILABLE' | 'AUDIO_CONVERSION_FAILED'
-  | 'HTML_UNRESOLVED' | 'HTML_ASSET_INVALID' | 'HEADER_SPACE' | 'HEADER_CONTENT';
+  | 'HTML_UNRESOLVED' | 'HTML_ASSET_INVALID';
 
 /** Contains no translated prose, raw errors, file names, or file contents. */
 export interface Diagnostic {
@@ -89,7 +89,6 @@ export interface CompositionPlan extends Inspection {
   readonly archives?: readonly ArchiveDescription[];
   readonly collisions?: readonly ArchiveCollision[];
   readonly references?: readonly HtmlReference[];
-  readonly headerSpace?: number;
   readonly resources?: {readonly large: boolean; readonly temporaryBytes: number; readonly minimumBytes: number};
 }
 

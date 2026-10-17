@@ -30,9 +30,11 @@ describe('inspection and role planning', () => {
     const read = vi.fn((offset: number, length: number) => {
       expect(length).toBeLessThanOrEqual(CHUNK_BYTES);
       expect(validRange(offset, length, INPUT_LIMIT)).toBe(true);
-      return Promise.resolve(new Uint8Array(length));
+      const bytes = new Uint8Array(length);
+      if (!offset) { bytes.set(new TextEncoder().encode('%PDF-1.4\n')); }
+      return Promise.resolve(bytes);
     });
-    const sources: InputSource[] = ['a', 'b'].map(id => ({id, name: 'large.bin', mediaType: '', role: 'appendable', reader: {size: INPUT_LIMIT, read}}));
+    const sources: InputSource[] = ['a', 'b'].map(id => ({id, name: 'large.pdf', mediaType: '', role: 'pdf', reader: {size: INPUT_LIMIT, read}}));
     const result = await inspectInputs(sources, context());
     expect(result.diagnostics).toEqual([]);
     expect(result.inputs.reduce((total, input) => total + input.size, 0)).toBe(TOTAL_INPUT_LIMIT);
@@ -95,8 +97,7 @@ describe('inspection and role planning', () => {
 
   it('excludes auxiliary roles from family counts and requires HTML for an asset ZIP', async() => {
     const result = await inspectInputs([
-      source('a', 'a.pdf', ['%PDF-1.4']), source('b', 'assets.zip', ['PK\x03\x04'], 'html-assets'),
-      source('c', 'c.bin', ['x'], 'appendable'), source('d', 'd.bin', ['y'], 'extra-header')
+      source('a', 'a.pdf', ['%PDF-1.4']), source('b', 'assets.zip', ['PK\x03\x04'], 'html-assets')
     ], context());
     const plan = planComposition(result, context());
     expect(plan.families).toEqual(['pdf']);

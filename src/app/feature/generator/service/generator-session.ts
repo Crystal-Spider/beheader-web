@@ -2,10 +2,15 @@ import {Injectable} from '@angular/core';
 import {Store} from '@ngrx/store';
 
 import {Processing} from '~bhw/core/service/processing';
+import {LanguagePreferences} from '~bhw/core/service/language-preferences';
+import {LanguageCode} from '~bhw/core/model/language';
 import {ArtifactReference, CompositionOptions, FileInput, InputRole, OperationResult} from '~bhw/polyglot/model/contract';
 import {jobActions, jobFeature} from '../redux/job';
 import {ProcessingError} from '~bhw/polyglot/logic/diagnostic';
-import {selectionActions} from '../redux/selection';
+import {selectionActions, selectionFeature} from '../redux/selection';
+
+/** Local asset location and the filename shown in the selected language. */
+interface ExampleAsset {readonly path: string; readonly name: string}
 
 /** Owns selected Files and output lifetimes outside NgRx; nothing here restores selected files. */
 @Injectable({providedIn: 'root'})
@@ -22,12 +27,15 @@ export class GeneratorSession {
   public options: CompositionOptions = {};
   /** @type {Signal<boolean>} */
   public readonly busy;
+  /** @type {Signal<readonly InputDescription[]>} Inspected roles, including auto-detected archives. */
+  private readonly selection;
 
   /**
    * @param {Processing} processing Dedicated worker owner.
    * @param {Store} store Metadata only.
+   * @param {LanguagePreferences} languages Current language for bundled examples.
    */
-  public constructor(private readonly processing: Processing, private readonly store: Store) { this.busy = store.selectSignal(jobFeature.selectBusy); }
+  public constructor(private readonly processing: Processing, private readonly store: Store, private readonly languages: LanguagePreferences) { this.busy = store.selectSignal(jobFeature.selectBusy); this.selection = store.selectSignal(selectionFeature.selectInputs); }
 
   /**
    * @param {readonly File[]} files Newly picked or dropped files.
@@ -45,7 +53,7 @@ export class GeneratorSession {
   /**
    * @param {string} id Input to remove.
    */
-  public remove(id: string): void { if (!this.busy()) { this.inputs = this.inputs.filter(input => input.id !== id); this.options = {...this.options, allowUnresolved: false}; this.refresh(); } }
+  public remove(id: string): void { if (!this.busy()) { this.inputs = this.inputs.filter(input => input.id !== id && (id !== this.htmlId || input.role !== 'html-assets')); this.options = {...this.options, allowUnresolved: false}; this.refresh(); } }
 
   /**
    * @param {string} id Input receiving a role decision.
@@ -53,28 +61,33 @@ export class GeneratorSession {
    */
   public assign(id: string, role: string): void {
     if (this.busy()) { return; }
+    if (id === this.htmlId && role && role !== 'html') { this.inputs = this.inputs.filter(input => input.role !== 'html-assets'); }
     this.inputs = this.inputs.map(input => input.id === id ? {id, file: input.file, ...(role ? {role: role as InputRole} : {})} : input);
     this.options = {...this.options, allowUnresolved: false}; this.refresh();
   }
 
   /**
    * @param {string} id Selected record.
-   * @returns {string} Explicit role, or automatic detection.
+   * @returns {InputRole | ''} Explicit role, or auto detect.
    */
-  public role(id: string): string { return this.inputs.find(input => input.id === id)?.role ?? ''; }
+  public role(id: string): InputRole | '' { return this.inputs.find(input => input.id === id)?.role ?? ''; }
 
   /**
    * @param {string} id Record to move.
-   * @param {number} target Destination index in selected ordering.
+   * @param {number} target Destination archive index; other input positions stay fixed.
    */
   public move(id: string, target: number): void {
     if (this.busy()) { return; }
-    const inputs = [...this.inputs]; const index = inputs.findIndex(input => input.id === id);
-    if (index < 0 || !Number.isInteger(target) || target < 0 || target >= inputs.length || target === index) { return; }
-    inputs.splice(target, 0, inputs.splice(index, 1)[0]!);
-    this.inputs = inputs;
+    const archives = this.selection().filter(input => input.role === 'archive').map(input => input.id);
+    const index = archives.indexOf(id);
+    const byId = new Map(this.inputs.map(input => [input.id, input]));
+    if (index < 0 || !Number.isInteger(target) || target < 0 || target >= archives.length || target === index || archives.some(id => !byId.has(id))) { return; }
+    archives.splice(target, 0, archives.splice(index, 1)[0]!);
+    const archiveIds = new Set(archives);
+    let position = 0;
+    this.inputs = this.inputs.map(input => archiveIds.has(input.id) ? byId.get(archives[position++]!)! : input);
     // Publish ordering before worker reinspection so CDK's drop cleanup cannot reveal stale cards.
-    this.store.dispatch(selectionActions.reordered({ids: inputs.map(input => input.id)}));
+    this.store.dispatch(selectionActions.reordered({ids: this.inputs.map(input => input.id)}));
     this.options = {...this.options, allowUnresolved: false}; this.refresh();
   }
 
@@ -122,12 +135,19 @@ export class GeneratorSession {
   public async example(): Promise<void> {
     if (this.busy()) { return; }
     const previous = this.inputs;
-    const files = await Promise.all(['picture.png', 'page.html', 'tone.mp3'].map(async name => {
-      const response = await fetch(new URL(`assets/example/${name}`, document.baseURI));
+    const language = this.languages.language();
+    const response = await fetch(new URL('assets/example/manifest.json', document.baseURI));
+    if (!response.ok) { throw new Error('IO_FAILURE'); }
+    const manifest = await response.json() as Partial<Record<LanguageCode, readonly ExampleAsset[]>>;
+    const assets = manifest[language] ?? manifest.en;
+    if (!assets?.length) { throw new Error('IO_FAILURE'); }
+    const files = await Promise.all(assets.map(async asset => {
+      const response = await fetch(new URL(`assets/example/${asset.path}`, document.baseURI));
       if (!response.ok) { throw new Error('IO_FAILURE'); }
-      return new File([await response.blob()], name);
+      const blob = await response.blob();
+      return new File([blob], asset.name, {type: blob.type});
     }));
-    if (this.inputs !== previous || this.busy()) { return; }
+    if (this.inputs !== previous || this.busy() || this.languages.language() !== language) { return; }
     this.inputs = []; this.add(files);
   }
 }

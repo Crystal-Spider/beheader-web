@@ -1,1 +1,7 @@
-<button mat-icon-button type="button" [attr.aria-describedby]="description() || null" [attr.aria-label]="label()" [disabled]="disabled()" [matTooltip]="label()" [matTooltipDisabled]="disabled()" [matTooltipShowDelay]="250" (click)="clicked.emit()"><bhw-icon [name]="icon()" /></button>
+<button mat-icon-button type="button" [attr.aria-controls]="controls() || null" [attr.aria-describedby]="description() || null" [attr.aria-expanded]="expanded()" [attr.aria-label]="label()" [disabled]="disabled()" [matTooltip]="label()" [matTooltipDisabled]="disabled()" [matTooltipShowDelay]="250" (click)="clicked.emit()">
+  @if (alternateIcon(); as alternate) {
+    <span class="icon-stack" [class.alternate-shown]="alternateShown()"><bhw-icon class="primary-icon" [name]="icon()" /><bhw-icon class="alternate-icon" [name]="alternate" /></span>
+  } @else {
+    <bhw-icon [name]="icon()" />
+  }
+</button>

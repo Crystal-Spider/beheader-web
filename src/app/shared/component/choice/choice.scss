@@ -14,3 +14,20 @@ mat-select {
   border-radius: 1rem;
   background: $background;
 }
+:host(.compact) mat-select {
+  font-size: 0.875rem;
+}
+:host(.inline) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .field-label {
+    flex-shrink: 0;
+    margin: 0;
+  }
+  mat-select {
+    flex: 1;
+    min-width: 0;
+  }
+}

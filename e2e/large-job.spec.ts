@@ -1,4 +1,4 @@
-import {closeSync, createReadStream, mkdirSync, openSync, readFileSync, readSync, statSync, writeFileSync} from 'node:fs';
+import {closeSync, createReadStream, mkdirSync, openSync, readSync, statSync, writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {buildSync} from 'esbuild';
@@ -23,12 +23,12 @@ test('generates and downloads an actual output above 512 MiB through bounded fil
   test.setTimeout(180000);
   await page.goto('./'); await page.addScriptTag({content: harness});
   const download = page.waitForEvent('download');
-  const result = await page.evaluate(async({worker, pdf}) => {
+  const result = await page.evaluate(async worker => {
     const url = URL.createObjectURL(new Blob([worker], {type: 'text/javascript'}));
     const instance = new Worker(url);
     try {
       const result = await new Promise<LargeResult>((resolve, reject) => {
-        instance.onmessage = (event: MessageEvent<LargeResult>) => resolve(event.data); instance.onerror = reject; instance.postMessage({pdf, cancel: false});
+        instance.onmessage = (event: MessageEvent<LargeResult>) => resolve(event.data); instance.onerror = reject; instance.postMessage({cancel: false});
       });
       if (result.error || !result.artifact) { throw new Error(JSON.stringify(result)); }
       const file = await window.bhwHarness.resolveArtifact(result.artifact);
@@ -36,7 +36,7 @@ test('generates and downloads an actual output above 512 MiB through bounded fil
       const link = document.createElement('a'); link.href = output; link.download = 'large-polyglot.pdf'; link.click();
       return result;
     } finally { instance.terminate(); URL.revokeObjectURL(url); }
-  }, {worker, pdf: Array.from(readFileSync('e2e/fixture/classic.pdf'))});
+  }, worker);
   const downloaded = await download;
   const path = (await downloaded.path());
   expect(result.resources.large).toBe(true);
@@ -60,13 +60,13 @@ test('generates and downloads an actual output above 512 MiB through bounded fil
 
 test('cancels a large streaming composition and removes its actual partial output', async({page}) => {
   await page.goto('./'); await page.addScriptTag({content: harness});
-  const result = await page.evaluate(async({worker, pdf}) => {
+  const result = await page.evaluate(async worker => {
     const url = URL.createObjectURL(new Blob([worker], {type: 'text/javascript'})); const instance = new Worker(url);
     try {
-      const result = await new Promise<CancelResult>((resolve, reject) => { instance.onmessage = (event: MessageEvent<CancelResult>) => resolve(event.data); instance.onerror = reject; instance.postMessage({pdf, cancel: true}); });
+      const result = await new Promise<CancelResult>((resolve, reject) => { instance.onmessage = (event: MessageEvent<CancelResult>) => resolve(event.data); instance.onerror = reject; instance.postMessage({cancel: true}); });
       const root = await window.bhwHarness.storageRoot();
       return {...result, removed: await root.getDirectoryHandle(result.jobId).then(() => false, () => true)};
     } finally { instance.terminate(); URL.revokeObjectURL(url); }
-  }, {worker, pdf: Array.from(readFileSync('e2e/fixture/classic.pdf'))});
+  }, worker);
   expect(result.diagnostic.code).toBe('CANCELLED'); expect(result.removed).toBe(true); expect(result.maxRead).toBeLessThanOrEqual(1024 ** 2);
 });

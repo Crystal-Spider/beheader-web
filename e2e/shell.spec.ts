@@ -21,7 +21,7 @@ test('switches language by keyboard, shows flags in both places, and remembers t
 
   await page.reload();
   await expect(page.getByRole('heading', {name: 'Un file. Tante possibilità.'})).toBeVisible();
-  expect(await page.evaluate(() => Object.keys(localStorage))).toEqual(['bhw.language']);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key !== 'bhw.hero-introduced'))).toEqual(['bhw.language']);
 });
 
 test('uses a regional Italian browser preference on a first visit', async({browser}) => {
@@ -31,7 +31,7 @@ test('uses a regional Italian browser preference on a first visit', async({brows
     await page.goto('./');
     await expect(page.getByRole('heading', {name: 'Un file. Tante possibilità.'})).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'it');
-    expect(await page.evaluate(() => localStorage.length)).toBe(0);
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key !== 'bhw.hero-introduced').length)).toBe(0);
   } finally {
     await context.close();
   }
@@ -94,10 +94,22 @@ for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({width, height: 900});
     await page.goto('./');
     await expect(page.getByRole('heading', {name: 'Your files', exact: true})).toBeVisible();
+    const checkBrand = async(): Promise<void> => {
+      const link = page.getByRole('link', {name: 'beheader web', exact: true});
+      await expect(link.locator('img')).toHaveAttribute('src', 'favicon/favicon.svg');
+      await expect(link.locator('img')).toHaveAttribute('alt', '');
+      await expect.poll(() => link.locator('img').evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+      await expect(link).not.toContainText('v1.0.0');
+      const brand = (await page.locator('.brand').boundingBox())!;
+      const language = (await page.locator('bhw-language-picker').boundingBox())!;
+      expect(brand.x + brand.width).toBeLessThanOrEqual(language.x);
+    };
+    await checkBrand();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.getByRole('combobox', {name: 'Language', exact: true}).click();
     await page.getByRole('option', {name: 'IT Italiano'}).click();
     await expect(page.getByRole('heading', {name: 'I tuoi file', exact: true})).toBeVisible();
+    await checkBrand();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(page.getByRole('list', {name: 'Tipi di file disponibili'}).getByRole('listitem')).toHaveCount(6);
     await expect(page.getByRole('listbox')).toBeHidden();
@@ -115,7 +127,7 @@ for (const width of [320, 390, 768, 1280]) {
     await picker.press('Escape');
     await expect(page.getByRole('listbox')).toBeHidden();
     if (width === 390 || width === 1280) {
-      await page.screenshot({path: `test-results/milestone-2-${width}.png`, fullPage: true});
+      await page.screenshot({path: `test-results/shell-${width}.png`, fullPage: true});
     }
   });
 }
