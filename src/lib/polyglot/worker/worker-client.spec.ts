@@ -41,6 +41,15 @@ const setup = (cleanup = vi.fn(async(_id: string) => {})) => {
 };
 
 describe('worker client ownership', () => {
+  it('retains every full-validation diagnostic without trying storage cleanup before allocation', async() => {
+    const {client, worker, cleanup} = setup();
+    const plan = {inputs: [], families: [], interpretations: [], ready: false, diagnostics: [{code: 'PDF_INVALID', severity: 'error'}, {code: 'HTML_ENCODING', severity: 'error'}]};
+    const running = client.run({operation: 'generate', inputs: []});
+    worker().emit({type: 'failed', jobId: worker().jobId, diagnostic: plan.diagnostics[0], plan});
+    await expect(running).rejects.toMatchObject({plan});
+    expect(cleanup).not.toHaveBeenCalled();
+    expect(worker().terminate).toHaveBeenCalledOnce();
+  });
   it('rejects concurrent jobs, forwards progress, then releases the worker and sources', async() => {
     const {client, worker, cleanup} = setup();
     const progress = vi.fn();

@@ -8,6 +8,13 @@ const request = (operation: 'inspect' | 'plan' | 'generate' = 'inspect'): Worker
 });
 
 describe('worker runtime', () => {
+  it('rejects the removed entry-path customization at the worker boundary', async() => {
+    const messages: WorkerResponse[] = [];
+    const message = request('plan');
+    if (message.type !== 'run') { throw new Error('Expected run'); }
+    await new WorkerRuntime(response => { messages.push(response); }).receive({...message, request: {...message.request, options: {htmlPath: 'site/index.html'}}});
+    expect(messages).toEqual([{type: 'failed', jobId: message.jobId, diagnostic: {code: 'INVALID_REQUEST', severity: 'error'}}]);
+  });
   it('runs inspection and planning without claiming successful generation', async() => {
     const messages: WorkerResponse[] = [];
     const runtime = new WorkerRuntime(message => { messages.push(message); });

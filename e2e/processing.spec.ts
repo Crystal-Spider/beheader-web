@@ -99,7 +99,7 @@ test('cleans a partially written workspace after forcibly terminating its worker
     URL.revokeObjectURL(url);
     return {outcome, removed, busy: client.busy};
   }, interruptedWorker);
-  expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'error'}, removed: true, busy: false});
+  expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'info'}, removed: true, busy: false});
 });
 
 test('reports unsupported storage, quota failures, and invalid cleanup paths safely', async({page}) => {
@@ -119,5 +119,5 @@ test('reports unsupported storage, quota failures, and invalid cleanup paths saf
     const invalidPath = await cleanupJob('../other-app').then(() => null, diagnose);
     return {denied, quota, invalidPath};
   });
-  expect(result).toEqual({denied: {code: 'STORAGE_UNAVAILABLE', severity: 'error'}, quota: {code: 'STORAGE_FULL', severity: 'error'}, invalidPath: {code: 'INVALID_REQUEST', severity: 'error'}});
+  expect(result).toEqual({denied: {code: 'STORAGE_UNAVAILABLE', severity: 'warning'}, quota: {code: 'STORAGE_FULL', severity: 'warning'}, invalidPath: {code: 'INVALID_REQUEST', severity: 'error'}});
 });

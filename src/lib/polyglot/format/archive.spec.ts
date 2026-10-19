@@ -7,7 +7,7 @@ import {TemporaryStorage} from '../io/temporary-storage';
 import {OutputWriter} from '../io/output-writer';
 import type {Entry} from '@zip.js/zip.js';
 import {CHUNK_BYTES} from '../io/bytes';
-import {appendArchives, archivePath, ArchiveReader, inspectArchive, mergeArchives} from './archive';
+import {appendArchives, archivePath, ArchiveReader, ARCHIVE_DIRECTORY_LIMIT, inspectArchive, mergeArchives} from './archive';
 
 const context = (): ProcessingContext => ({signal: new AbortController().signal, progress: vi.fn()});
 const source = (name: string, id = name) => ({id, name, mediaType: '', reader: new BlobInput(new Blob([new Uint8Array(readFileSync(`e2e/fixture/${name}`))]))});
@@ -43,7 +43,7 @@ describe('seekable archive validation and ordering', () => {
       const bytes = new Uint8Array(length);
       const view = new DataView(bytes.buffer, length - 22);
       view.setUint32(0, 0x06054b50, true);
-      view.setUint32(12, CHUNK_BYTES + 1, true);
+      view.setUint32(12, ARCHIVE_DIRECTORY_LIMIT + 1, true);
       return Promise.resolve(bytes);
     });
     await expect(inspectArchive({id: 'large', name: 'large.zip', mediaType: '', reader: {size, read}}, context())).rejects.toMatchObject({diagnostic: {code: 'FORMAT_RESOURCE_LIMIT'}});

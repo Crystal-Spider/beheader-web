@@ -33,6 +33,7 @@
             "tsConfig": "tsconfig.app.json",
             "webWorkerTsConfig": "tsconfig.worker.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": ["@eshaz/web-worker"],
             "assets": [
               {
                 "glob": "**/*",

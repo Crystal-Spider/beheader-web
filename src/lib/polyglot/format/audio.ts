@@ -8,6 +8,7 @@ import {mediaSource, mediaTarget} from '../io/media-io';
 import {TemporaryStorage} from '../io/temporary-storage';
 import {checkCancelled, diagnose, ProcessingError} from '../logic/diagnostic';
 import {inspectAudioStructure} from './audio-structure';
+import {withReadProgress} from '../io/read-progress';
 
 /** Upstream-aligned initial AAC-LC bitrate; compatible encoded AAC is copied instead. */
 export const AUDIO_BITRATE = 192000;
@@ -42,27 +43,40 @@ function audioInput(source: InputSource, context: ProcessingContext): Input {
  */
 export async function inspectAudio(source: InputSource, context: ProcessingContext): Promise<AudioInfo> {
   checkCancelled(context.signal);
-  await inspectAudioStructure(source.reader, context);
-  const input = audioInput(source, context);
+  const report = (fraction: number, detail: 'audio-structure' | 'audio-metadata'): void => {
+    context.progress({stage: 'plan', completed: Math.floor(fraction * 10000), total: 10000, unit: 'bytes', estimated: true, detail});
+  };
+  report(0, 'audio-structure');
+  await inspectAudioStructure(withReadProgress(source.reader, fraction => report(fraction * 0.4, 'audio-structure')), context);
+  report(0.4, 'audio-metadata');
+  const input = audioInput({...source, reader: withReadProgress(source.reader, fraction => report(0.4 + fraction * 0.59, 'audio-metadata'))}, context);
   try {
     const tracks = await input.getTracks();
     const audio = await input.getAudioTracks();
-    if (tracks.length !== 1 || audio.length !== 1 || !audio[0]) { invalid('AUDIO_TRACKS'); }
+    if (tracks.length !== 1 || audio.length !== 1 || !audio[0]) { invalid('AUDIO_TRACKS', {reason: 'MEDIA_TRACKS', tracks: tracks.length, audioTracks: audio.length}); }
     const track = audio[0];
     const codec = await track.getCodec();
-    if (!codec || !['mp3', 'vorbis', 'opus', 'aac'].includes(codec) && !codec.startsWith('pcm-')) { invalid('AUDIO_CODEC'); }
+    if (!codec || !['mp3', 'vorbis', 'opus', 'aac'].includes(codec) && !codec.startsWith('pcm-')) { invalid('AUDIO_CODEC', {reason: 'MEDIA_CODEC', codec: codec ?? 'unknown'}); }
     const channels = await track.getNumberOfChannels();
     const sampleRate = await track.getSampleRate();
     // Seven-channel AAC requires a program configuration element, outside the classic ASC relocation scope.
-    if (![1, 2, 3, 4, 5, 6, 8].includes(channels)) { invalid('AUDIO_CHANNELS'); }
-    if (!Number.isFinite(sampleRate) || sampleRate < 7350 || sampleRate > 192000) { invalid('AUDIO_CODEC'); }
+    if (![1, 2, 3, 4, 5, 6, 8].includes(channels)) { invalid('AUDIO_CHANNELS', {reason: 'MEDIA_CHANNELS', actual: channels}); }
+    if (!Number.isFinite(sampleRate) || sampleRate < 7350 || sampleRate > 192000) { invalid('AUDIO_CODEC', {reason: 'MEDIA_SAMPLE_RATE', actual: Number.isFinite(sampleRate) ? sampleRate : 0}); }
     const duration = await input.computeDuration();
     checkCancelled(context.signal);
-    if (!Number.isFinite(duration) || duration <= 0) { invalid('AUDIO_INVALID'); }
+    if (!Number.isFinite(duration) || duration <= 0) { invalid('AUDIO_INVALID', {reason: 'AUDIO_DURATION'}); }
     const outputRate = AAC_SAMPLE_RATES.includes(sampleRate) ? sampleRate : 48000;
-    if (duration * AUDIO_BITRATE / 8 > TOTAL_INPUT_LIMIT || Math.ceil(duration * outputRate / 1024) + 2 > 4000000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (duration * AUDIO_BITRATE / 8 > TOTAL_INPUT_LIMIT) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'AUDIO_OUTPUT_BYTES', actual: Math.ceil(duration * AUDIO_BITRATE / 8), limit: TOTAL_INPUT_LIMIT}); }
+    if (Math.ceil(duration * outputRate / 1024) + 2 > 4000000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'AUDIO_PACKETS', actual: Math.ceil(duration * outputRate / 1024) + 2, limit: 4000000}); }
     const copy = codec === 'aac' && AAC_SAMPLE_RATES.includes(sampleRate) && await track.getCodecParameterString() === 'mp4a.40.2';
-    if (!copy && !await track.canDecode()) { invalid('AUDIO_DECODE_UNAVAILABLE'); }
+    if (!copy && !await track.canDecode()) {
+      if (codec !== 'mp3') { invalid('AUDIO_DECODE_UNAVAILABLE', {reason: 'AUDIO_DECODE', codec: codec.startsWith('pcm-') ? 'pcm' : codec}); }
+      const {registerMp3Decoder} = await import('./mp3-decoder');
+      checkCancelled(context.signal);
+      registerMp3Decoder();
+      if (!await track.canDecode()) { invalid('AUDIO_DECODE_UNAVAILABLE', {reason: 'AUDIO_DECODE', codec: 'mp3'}); }
+    }
+    report(1, 'audio-metadata');
     return {codec, channels, sampleRate, duration, copy};
   } catch(error) { throw new ProcessingError(diagnose(error, 'AUDIO_INVALID')); }
   finally { input.dispose(); }
@@ -109,7 +123,7 @@ export async function normalizeAudio(source: InputSource, info: AudioInfo, stora
     const artifact = await writer.finish(storage.jobId, id, 'audio/mp4', context.signal);
     return {artifact, source: {...source, reader: new BlobInput(await storage.resolve(artifact))}};
   } catch(error) {
-    if (context.signal.aborted) { invalid('CANCELLED'); }
+    if (context.signal.aborted) { throw new ProcessingError({code: 'CANCELLED', severity: 'info'}); }
     throw new ProcessingError(diagnose(sinkFailure ?? error, 'AUDIO_CONVERSION_FAILED'));
   } finally {
     context.signal.removeEventListener('abort', cancel);

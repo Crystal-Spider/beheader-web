@@ -4,6 +4,8 @@ import process from 'node:process';
 
 const formats = [
   ['audio.mp3', ['-c:a', 'libmp3lame', '-b:a', '128k']],
+  ['audio-stereo.mp3', ['-af', 'pan=stereo|c0=c0|c1=0.5*c0', '-c:a', 'libmp3lame', '-q:a', '3']],
+  ['audio-low-rate.mp3', ['-ar', '22050', '-c:a', 'libmp3lame', '-b:a', '48k']],
   ['audio.wav', ['-c:a', 'pcm_s16le']],
   ['audio-vorbis.ogg', ['-c:a', 'libvorbis', '-q:a', '5']],
   ['audio-opus.ogg', ['-c:a', 'libopus', '-b:a', '128k']],

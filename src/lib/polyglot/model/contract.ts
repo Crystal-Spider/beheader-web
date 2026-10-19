@@ -26,7 +26,8 @@ export type DiagnosticCode =
 /** Contains no translated prose, raw errors, file names, or file contents. */
 export interface Diagnostic {
   readonly code: DiagnosticCode;
-  readonly severity: 'error' | 'warning';
+  /** User-facing severity; generation prerequisites are checked independently. */
+  readonly severity: 'info' | 'warning' | 'error';
   readonly inputId?: string;
   readonly details?: Readonly<Record<string, string | number>>;
 }
@@ -73,6 +74,13 @@ export interface InputDescription {
 export interface Inspection {
   readonly inputs: readonly InputDescription[];
   readonly diagnostics: readonly Diagnostic[];
+  readonly collisions?: readonly ArchiveCollision[];
+}
+
+/** Cheap selection readiness; does not promise valid structures or output interpretations. */
+export interface SelectionCheck extends Inspection {
+  readonly families: readonly FormatFamily[];
+  readonly canCombine: boolean;
 }
 
 /** Only independently validated interpretations may be advertised by a planner. */
@@ -101,7 +109,6 @@ export interface HtmlReference {
 
 /** Explicit decisions shared by planning and generation, without persisted file selection. */
 export interface CompositionOptions {
-  readonly htmlPath?: string;
   readonly allowUnresolved?: boolean;
 }
 
@@ -127,12 +134,18 @@ export interface ArtifactReference {
   readonly mediaType: string;
 }
 
+/** One shared list for worker validation, TypeScript and localized progress labels. */
+export const PROGRESS_DETAILS = ['audio-structure', 'audio-metadata', 'html-assets', 'image-normalize', 'finalize', 'pdf-structure', 'image-structure', 'media-structure', 'archive-index', 'html-encoding', 'input-types'] as const;
+
 /** Measured work units; totals are scoped to the named stage. */
 export interface JobProgress {
   readonly stage: 'inspect' | 'plan' | 'convert' | 'generate' | 'extract' | 'pack' | 'cleanup';
   readonly completed: number;
   readonly total: number;
   readonly unit: 'bytes' | 'inputs' | 'microseconds';
+  readonly detail?: typeof PROGRESS_DETAILS[number];
+  /** Work estimates are explicitly distinguished from exact byte/media counters. */
+  readonly estimated?: boolean;
 }
 
 /** Shared cooperative cancellation and progress reporting. */
@@ -152,7 +165,7 @@ export interface OperationRequest {
 export type OperationResult =
   | {readonly operation: 'inspect'; readonly inspection: Inspection}
   | {readonly operation: 'plan'; readonly plan: CompositionPlan}
-  | {readonly operation: 'generate'; readonly artifact: ArtifactReference; readonly interpretations: readonly Interpretation[]};
+  | {readonly operation: 'generate'; readonly artifact: ArtifactReference; readonly interpretations: readonly Interpretation[]; readonly plan?: CompositionPlan};
 
 /** Worker requests are job-scoped, including cancellation. */
 export type WorkerRequest =
@@ -163,4 +176,4 @@ export type WorkerRequest =
 export type WorkerResponse =
   | {readonly type: 'progress'; readonly jobId: string; readonly progress: JobProgress}
   | {readonly type: 'complete'; readonly jobId: string; readonly result: OperationResult}
-  | {readonly type: 'failed'; readonly jobId: string; readonly diagnostic: Diagnostic};
+  | {readonly type: 'failed'; readonly jobId: string; readonly diagnostic: Diagnostic; readonly plan?: CompositionPlan};

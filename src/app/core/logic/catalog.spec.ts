@@ -2,7 +2,9 @@ import {describe, expect, it} from 'vitest';
 
 import en from '../i18n/en.json';
 import itCatalog from '../i18n/it.json';
-import {DiagnosticCode} from '~bhw/polyglot/model/contract';
+import {DiagnosticCode, PROGRESS_DETAILS} from '~bhw/polyglot/model/contract';
+import {PDF_REASONS, PdfReason} from '~bhw/polyglot/model/pdf-diagnostic';
+import {DETAIL_REASONS, DetailReason} from '~bhw/polyglot/model/diagnostic-detail';
 
 /**
  * Flatten catalog paths to catch untranslated additions and mismatched parameters.
@@ -35,5 +37,23 @@ describe('translation completeness', () => {
     const english: Record<DiagnosticCode, string> = en.diagnostic;
     const italian: Record<DiagnosticCode, string> = itCatalog.diagnostic;
     expect(Object.keys(italian).sort()).toEqual(Object.keys(english).sort());
+  });
+
+  it('explains every PDF check in both languages', () => {
+    const english: Record<PdfReason, string> = en.pdfReason;
+    const italian: Record<PdfReason, string> = itCatalog.pdfReason;
+    expect(Object.keys(english).sort()).toEqual([...PDF_REASONS].sort());
+    expect(Object.keys(italian).sort()).toEqual([...PDF_REASONS].sort());
+  });
+
+  it('explains every public structural reason in both languages', () => {
+    const english: Record<DetailReason, string> = en.detail;
+    const italian: Record<DetailReason, string> = itCatalog.detail;
+    expect(Object.keys(english).sort()).toEqual([...DETAIL_REASONS].sort());
+    expect(Object.keys(italian).sort()).toEqual([...DETAIL_REASONS].sort());
+  });
+
+  it('labels every worker detail in both languages', () => {
+    for (const detail of PROGRESS_DETAILS) { expect(en.progress[detail]).toBeTruthy(); expect(itCatalog.progress[detail]).toBeTruthy(); }
   });
 });

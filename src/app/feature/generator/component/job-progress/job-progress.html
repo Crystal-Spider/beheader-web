@@ -1,0 +1,11 @@
+@if (visible()) {
+<ng-container *transloco="let t">
+  <section class="progress-panel" [attr.aria-label]="t('progress.' + (operation() || 'refresh'))">
+    <div class="progress-heading"><h3>{{ t('progress.' + (operation() || 'refresh')) }}</h3><span>{{ t('progress.percent', {value: percent()}) }}</span></div>
+    <mat-progress-bar class="overall-progress" mode="determinate" [attr.aria-label]="t('progress.overall')" [value]="percent()" />
+    <p aria-live="polite" class="current-step">{{ t(!busy() ? 'progress.complete' : event()?.detail === 'finalize' ? 'progress.finalize' : 'stage.' + (event()?.stage || 'inspect')) }}@if (busy() && event()?.detail && event()?.detail !== 'finalize') { · {{ t('progress.' + event()!.detail) }} }</p>
+    <div class="time-estimate"><span>{{ t('progress.elapsed', {time: elapsed()}) }}</span>@if (busy()) { <span>{{ remaining() ? t('progress.remaining', {time: remaining()}) : t(waiting() ? 'progress.working' : 'progress.estimating') }}</span> }</div>
+    @if (waiting()) { <mat-progress-bar class="activity" mode="indeterminate" [attr.aria-label]="t('progress.working')" /> }
+  </section>
+</ng-container>
+}

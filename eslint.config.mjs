@@ -23,7 +23,7 @@ const formatting = {
 };
 
 export default tseslint.config(
-  {ignores: ['node_modules/**', '.angular/**', 'docs/**', 'dist/**', 'coverage/**', 'test-results/**', 'playwright-report/**']},
+  {ignores: ['node_modules/**', '.angular/**', 'docs/**', 'dist/**', 'coverage/**', 'test-results/**', 'playwright-report/**', 'local-validation/**']},
   {
     files: ['**/*.mjs'],
     extends: [js.configs.recommended],

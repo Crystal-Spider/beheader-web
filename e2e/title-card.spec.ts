@@ -202,6 +202,8 @@ test('keeps both guide languages accessible and responsive at mobile and desktop
       await page.mouse.move(0, 0);
       await expect(page.locator('.mat-mdc-tooltip-surface')).toBeHidden();
       const contentBottom = await card.locator('.faces').evaluate(element => element.getBoundingClientRect().bottom - parseFloat(getComputedStyle(element).paddingBottom));
+      const eyebrows = await card.locator('.eyebrow').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
+      expect(Math.abs(eyebrows[0]! - eyebrows[1]!)).toBeLessThan(1);
       for (const selector of ['.privacy', '.guide ol']) {
         const footer = (await card.locator(selector).boundingBox())!;
         expect(Math.abs(footer.y + footer.height - contentBottom)).toBeLessThanOrEqual(1);

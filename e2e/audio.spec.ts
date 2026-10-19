@@ -11,11 +11,21 @@ test.beforeEach(async({page, browserName}) => {
   await page.addScriptTag({content: harness});
 });
 
-for (const {name, allFamilies} of [
-  ...['audio.mp3', 'audio.wav', 'audio-vorbis.ogg', 'audio-opus.ogg', 'audio.m4a', 'audio.aac', 'audio-stereo.wav', 'audio-float.wav', 'audio-surround.wav', 'audio-surround.m4a'].map(name => ({name, allFamilies: false})),
-  {name: 'audio.mp3', allFamilies: true}
+for (const {name, allFamilies, fallback} of [
+  ...['audio.mp3', 'audio.wav', 'audio-vorbis.ogg', 'audio-opus.ogg', 'audio.m4a', 'audio.aac', 'audio-stereo.wav', 'audio-float.wav', 'audio-surround.wav', 'audio-surround.m4a'].map(name => ({name, allFamilies: false, fallback: false})),
+  {name: 'audio.mp3', allFamilies: true, fallback: false},
+  ...['audio.mp3', 'audio-stereo.mp3', 'audio-low-rate.mp3'].map(name => ({name, allFamilies: false, fallback: true}))
 ]) {
-  test(`converts ${name}${allFamilies ? ' with all families' : ''} to playable AAC-LC without network processing`, async({page, browser, browserName}) => {
+  test(`converts ${name}${allFamilies ? ' with all families' : ''}${fallback ? ' without native audio APIs' : ''} to playable AAC-LC without network processing`, async({page, browser, browserName}) => {
+    if (fallback) {
+      await page.route('**/worker-*.js', async route => {
+        const response = await route.fetch();
+        await route.fulfill({response, body: `Object.defineProperty(globalThis, 'AudioDecoder', {value: undefined}); Object.defineProperty(globalThis, 'AudioData', {value: undefined});\n${await response.text()}`});
+      });
+    }
+    const decoderRequests: string[] = [];
+    const decoderChunk = readdirSync('docs').find(name => /^chunk-.*\.js$/.test(name) && readFileSync(`docs/${name}`, 'utf8').includes('enableGapless'))!;
+    page.on('request', request => { if (request.url().endsWith(decoderChunk)) { decoderRequests.push(request.url()); } });
     const external: string[] = [];
     page.on('request', request => { if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') { external.push(request.url()); } });
     const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
@@ -60,14 +70,22 @@ for (const {name, allFamilies} of [
       expect(result.progress.every((event, index) => event.completed <= event.total && (!index || event.completed >= result.progress[index - 1]!.completed))).toBe(true);
     }
     expect(external).toEqual([]);
-    mkdirSync(`test-results/audio/${browserName}`, {recursive: true});
-    writeFileSync(`test-results/audio/${browserName}/${name}${allFamilies ? '-all-families' : ''}.polyglot`, new Uint8Array(result.bytes));
+    if (name.endsWith('.mp3')) { expect(decoderRequests.length > 0).toBe(fallback); }
+    const directory = `test-results/${fallback ? 'mp3-fallback' : 'audio'}/${browserName}`;
+    mkdirSync(directory, {recursive: true});
+    writeFileSync(`${directory}/${name}${allFamilies ? '-all-families' : ''}.polyglot`, new Uint8Array(result.bytes));
     writeFileSync(`test-results/audio/${browserName}/environment.json`, JSON.stringify({engine: browserName, version: browser.version(), platform: process.platform}));
   });
 }
 
-for (const stage of ['before-conversion', 'conversion', 'after-conversion'] as const) {
-  test(`cancels ${stage}, cleans audio intermediates, and permits retry`, async({page}) => {
+for (const {stage, fallback} of [false, true].flatMap(fallback => (['before-conversion', 'conversion', 'after-conversion'] as const).map(stage => ({stage, fallback})))) {
+  test(`cancels ${stage}${fallback ? ' without native decoding' : ''}, cleans audio intermediates, and permits retry`, async({page}) => {
+    if (fallback) {
+      await page.route('**/worker-*.js', async route => {
+        const response = await route.fetch();
+        await route.fulfill({response, body: `Object.defineProperty(globalThis, 'AudioDecoder', {value: undefined});\n${await response.text()}`});
+      });
+    }
     const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
     const result = await page.evaluate(async({bytes, workerFile, stage}) => {
       const {WorkerClient, cleanupJob, storageRoot, diagnose} = window.bhwHarness;
@@ -88,7 +106,7 @@ for (const stage of ['before-conversion', 'conversion', 'after-conversion'] as c
       const retry = await client.run({operation: 'plan', inputs});
       return {outcome, removed, retry: retry.operation === 'plan' && retry.plan.ready};
     }, {bytes: Array.from(readFileSync('e2e/fixture/audio-long.mp3')), workerFile, stage});
-    expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'error'}, removed: true, retry: true});
+    expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'info'}, removed: true, retry: true});
   });
 }
 
@@ -104,6 +122,22 @@ test('rejects a malformed WAV and separate audio/video inputs outside picker fil
   }, {workerFile, corrupt: Array.from(readFileSync('e2e/fixture/audio-corrupt.wav')), audio: Array.from(readFileSync('e2e/fixture/audio.mp3')), video: Array.from(readFileSync('e2e/fixture/video-aac.mp4'))});
   expect(result.malformed).toMatchObject({operation: 'plan', plan: {ready: false, diagnostics: [{code: 'AUDIO_INVALID'}]}});
   expect(result.duplicate).toMatchObject({operation: 'plan', plan: {ready: false, diagnostics: [{code: 'ROLE_CONFLICT', details: {role: 'media'}}]}});
+});
+
+test('keeps missing Ogg decoding explicit when only the MP3 fallback is available', async({page}) => {
+  await page.route('**/worker-*.js', async route => {
+    const response = await route.fetch();
+    await route.fulfill({response, body: `Object.defineProperty(globalThis, 'AudioDecoder', {value: undefined});\n${await response.text()}`});
+  });
+  const workerFile = readdirSync('docs').find(name => /^worker-[A-Z0-9]{8}\.js$/.test(name))!;
+  for (const name of ['audio-vorbis.ogg', 'audio-opus.ogg']) {
+    const result = await page.evaluate(async({name, workerFile, bytes}) => {
+      const {WorkerClient, cleanupJob} = window.bhwHarness;
+      const client = new WorkerClient(() => new Worker(new URL(workerFile, document.baseURI), {type: 'module'}), cleanupJob);
+      return client.run({operation: 'plan', inputs: [{id: 'html', file: new File(['<!doctype html>'], 'page.html')}, {id: 'audio', file: new File([new Uint8Array(bytes)], name)}]});
+    }, {name, workerFile, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))});
+    expect(result).toMatchObject({operation: 'plan', plan: {ready: false, diagnostics: [{code: 'AUDIO_DECODE_UNAVAILABLE', severity: 'error', inputId: 'audio'}]}});
+  }
 });
 
 test('preserves storage-full diagnostics and cleans audio conversion intermediates', async({page}) => {
@@ -130,5 +164,5 @@ test('preserves storage-full diagnostics and cleans audio conversion intermediat
     const root = await storageRoot();
     return {outcome, removed: await root.getDirectoryHandle(jobId).then(() => false, () => true)};
   }, Array.from(readFileSync('e2e/fixture/audio.wav')));
-  expect(result).toEqual({outcome: {code: 'STORAGE_FULL', severity: 'error'}, removed: true});
+  expect(result).toEqual({outcome: {code: 'STORAGE_FULL', severity: 'warning'}, removed: true});
 });

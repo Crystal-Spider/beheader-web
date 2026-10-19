@@ -39,7 +39,7 @@ export class Processing implements OnDestroy {
     const revision = this.revision;
     const session = await this.storageSession;
     if (session.diagnostic) { this.maintenance.set(session.diagnostic); }
-    if (revision !== this.revision) { throw new ProcessingError({code: 'CANCELLED', severity: 'error'}); }
+    if (revision !== this.revision) { throw new ProcessingError({code: 'CANCELLED', severity: 'info'}); }
     const result = await this.client.run(request, progress => { this.updates.next(progress); });
     if (result.operation === 'generate') { this.retained.add(result.artifact.jobId); }
     return result;

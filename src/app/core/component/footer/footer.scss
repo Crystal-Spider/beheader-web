@@ -17,6 +17,11 @@
 .app-footer p {
   margin: 0;
 }
+.app-footer.wrapped {
+  justify-content: center;
+  text-align: center;
+}
+.app-footer.wrapped nav { justify-content: center; }
 .app-footer nav {
   display: flex;
   flex-wrap: wrap;

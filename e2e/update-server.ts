@@ -15,14 +15,23 @@ interface Manifest {hashTable: Record<string, string>}
 
 /**
  * Serve two valid builds on an isolated origin without modifying shared production files.
+ * @param {string} workerPrefix Optional capability simulation, included in valid cache hashes.
  * @returns {Promise<UpdateServer>} Local server with an atomic deployment switch.
  */
-export async function startUpdateServer(): Promise<UpdateServer> {
+export async function startUpdateServer(workerPrefix = ''): Promise<UpdateServer> {
   const root = resolve('docs');
   const prefix = '/beheader-web/';
   const originalIndex = readFileSync(resolve(root, 'index.html'));
   const nextIndex = Buffer.from(originalIndex.toString('utf8').replace('<head>', '<head><meta name="bhw-fixture-build" content="next">'));
   const manifest = JSON.parse(readFileSync(resolve(root, 'ngsw.json'), 'utf8')) as Manifest;
+  const overrides = new Map<string, Buffer>();
+  if (workerPrefix) {
+    for (const url of Object.keys(manifest.hashTable).filter(url => /\/worker-[A-Z0-9]{8}\.js$/.test(url))) {
+      const content = Buffer.concat([Buffer.from(workerPrefix + '\n'), readFileSync(resolve(root, url.slice(prefix.length)))]);
+      overrides.set(url, content);
+      manifest.hashTable[url] = createHash('sha1').update(content).digest('hex');
+    }
+  }
   const nextManifest = {...manifest, appData: {revision: 'next'}, hashTable: {...manifest.hashTable, [`${prefix}index.html`]: createHash('sha1').update(nextIndex).digest('hex')}};
   const types: Record<string, string> = {'.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json'};
   let published = false;
@@ -33,7 +42,7 @@ export async function startUpdateServer(): Promise<UpdateServer> {
       const filename = resolve(root, pathname.slice(prefix.length) || 'index.html');
       if (!filename.startsWith(root + sep)) { response.writeHead(404).end(); return; }
       const content = pathname === `${prefix}ngsw.json` ? JSON.stringify(published ? nextManifest : manifest)
-        : filename === resolve(root, 'index.html') ? (published ? nextIndex : originalIndex) : readFileSync(filename);
+        : filename === resolve(root, 'index.html') ? (published ? nextIndex : originalIndex) : overrides.get(pathname) ?? readFileSync(filename);
       response.writeHead(200, {'Content-Type': types[extname(filename)] ?? 'application/octet-stream', 'Cache-Control': 'no-store'}).end(content);
     } catch { response.writeHead(404).end(); }
   });

@@ -1,0 +1,36 @@
+<ng-container *transloco="let t">
+  <section aria-labelledby="messages-title" class="message-panel" [attr.aria-busy]="state().busy" [attr.aria-hidden]="!expanded()" [class.open]="expanded()" [inert]="!expanded()">
+    <div class="message-clip">
+      <div class="message-content">
+        <h3 id="messages-title">{{ t('messages.title') }}</h3>
+        <div aria-live="polite" class="diagnostics">
+          @for (diagnostic of displayed().diagnostics; track $index) {
+            <article class="message" [class.error]="diagnostic.severity === 'error'" [class.info]="diagnostic.severity === 'info'" [class.warning]="diagnostic.severity === 'warning'">
+              <div class="message-heading"><span>{{ t('messages.' + diagnostic.severity) }}</span><code>{{ diagnostic.code }}</code></div>
+              @if (inputName(diagnostic.inputId); as name) { <strong>{{ name }}</strong> }
+              <p>{{ message(diagnostic) }}</p>
+              @if (diagnostic.code === 'HTML_UNRESOLVED') {
+                <div class="reference-panel">
+                  <ul>@for (reference of displayed().references; track $index) { <li><code>{{ reference.reference }}</code> · {{ reference.from }} · {{ t('reference.' + reference.reason) }}</li> }</ul>
+                  <mat-checkbox [checked]="displayed().allowUnresolved" [disabled]="state().busy" (change)="allowed.emit($event.checked)">{{ t('ui.allowReferences') }}</mat-checkbox>
+                </div>
+              }
+              @if (diagnostic.code === 'ARCHIVE_COLLISION') {
+                <ul class="archive-collisions">@for (collision of displayed().collisions; track $index) { <li><code>{{ collision.path }}</code><br>{{ t('messages.overwrite', {winner: inputName(collision.laterInputId), earlier: inputName(collision.earlierInputId)}) }}</li> }</ul>
+              }
+            </article>
+          }
+        </div>
+        @if (displayed().largeBytes !== null) {
+          <article class="message info"><div class="message-heading">{{ t('messages.info') }}</div><p>{{ t('offline.large') }} {{ storage() }}</p></article>
+        }
+        @if (errors()) {
+          <div #reportActions class="report-actions" [class.stacked]="stacked()">
+            <bhw-button appearance="outlined" icon="download" [disabled]="state().busy" [label]="t('ui.logs')" (clicked)="logs.emit()" />
+            <bhw-button appearance="outlined" icon="external" [disabled]="state().busy" [href]="displayed().issue" [label]="t('ui.issue')" />
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+</ng-container>

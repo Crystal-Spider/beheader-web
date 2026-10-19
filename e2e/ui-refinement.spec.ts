@@ -34,7 +34,7 @@ test('offers a full-width example button with an icon and no additional-payload 
   expect((await example.boundingBox())!.width).toBe((await combine.boundingBox())!.width);
   await expect(example.locator('bhw-icon')).toBeVisible();
   await expect(example.locator('mat-icon')).toHaveAttribute('data-mat-icon-name', 'example');
-  await expect(combine.locator('mat-icon')).toHaveAttribute('data-mat-icon-name', 'magic');
+  await expect(combine.locator('.primary-action mat-icon')).toHaveAttribute('data-mat-icon-name', 'magic');
   await expect(combine).toHaveCSS('font-size', await example.evaluate(element => getComputedStyle(element).fontSize));
   await expect(page.getByText('Combine two or more supported file types.', {exact: true})).toHaveCount(0);
   await expect(page.locator('bhw-expansion')).toHaveCount(0);
@@ -236,9 +236,9 @@ for (const language of ['en', 'it']) {
           const last = (await outerCards.at(-1)!.boundingBox())!;
           const combine = (await page.getByRole('button', {name: language === 'it' ? 'Combina file' : 'Combine files', exact: true}).boundingBox())!;
           expect(first.y - example.y - example.height, `example/card gap at ${width}px`).toBeCloseTo(16, 1);
-          const diagnostics = page.locator('.diagnostics');
-          const noticesBeforeCombine = await diagnostics.locator(':scope > *').count() ? diagnostics : page.locator('.archive-collisions');
+          const noticesBeforeCombine = page.locator('.message-panel.open');
           if (await noticesBeforeCombine.count()) {
+            await expect(noticesBeforeCombine).toHaveCSS('opacity', '1');
             const notices = (await noticesBeforeCombine.boundingBox())!;
             expect(notices.y).toBeGreaterThanOrEqual(last.y + last.height);
             expect(combine.y - notices.y - notices.height, `notice/combine gap at ${width}px`).toBeCloseTo(16, 1);

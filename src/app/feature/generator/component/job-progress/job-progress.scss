@@ -1,0 +1,12 @@
+@use 'variables' as *;
+:host { display: none; }
+:host(.visible) { display: block; margin-bottom: 1rem; }
+.progress-panel { padding: 1.25rem; border: 1px solid $border; border-radius: 1rem; background: $surface; }
+.progress-heading, .time-estimate { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
+.progress-heading { margin-bottom: 1rem; }
+h3 { margin: 0; font-size: 0.9rem; font-weight: 500; }
+.progress-heading span { color: $link; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.current-step { margin: 1rem 0 0.5rem; color: $foreground; font-size: 0.8rem; }
+.time-estimate { color: $muted; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.activity { margin-top: 0.75rem; opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .activity { display: none; } }

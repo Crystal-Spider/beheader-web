@@ -6,4 +6,6 @@ The image and instrumental tone have no language-specific text or speech; their 
 English: archive-a.zip and archive-b.zip share hello.txt with different greetings.
 Italian: archivio-a.zip and archivio-b.zip share ciao.txt with different greetings.
 Each archive also contains a.txt or b.txt. Reordering changes the greeting; both unique files remain.
+The HTML example references a stylesheet and picture supplied in assets.zip (English) or risorse.zip (Italian).
+That ZIP is attached to the HTML card as resources; it is not a third independent archive interpretation.
 No third-party recording, artwork, or user content is included.

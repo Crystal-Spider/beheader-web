@@ -7,13 +7,12 @@ import {InputDescription} from '~bhw/polyglot/model/contract';
 import {Choice} from '~bhw/shared/component/choice/choice';
 import {IconButton} from '~bhw/shared/component/icon-button/icon-button';
 import {Button} from '~bhw/shared/component/button/button';
-import {TextField} from '~bhw/shared/component/text-field/text-field';
 
 /** Metadata only; selected File objects remain with the runtime session. */
 export interface FileCard extends InputDescription {readonly explicitRole: string}
 
 /** File cards with a shared archive group, translucent drag placeholders, and keyboard reordering. */
-@Component({selector: 'bhw-input-list', imports: [DragDropModule, TranslocoDirective, Choice, IconButton, Button, TextField], templateUrl: './input-list.html', styleUrl: './input-list.scss', changeDetection: ChangeDetectionStrategy.OnPush})
+@Component({selector: 'bhw-input-list', imports: [DragDropModule, TranslocoDirective, Choice, IconButton, Button], templateUrl: './input-list.html', styleUrl: './input-list.scss', changeDetection: ChangeDetectionStrategy.OnPush})
 export class InputList {
   /** @type {InputSignal<readonly FileCard[]>} */
   public readonly inputs = input.required<readonly FileCard[]>();
@@ -25,14 +24,10 @@ export class InputList {
   public readonly assets = input<InputDescription>();
   /** @type {InputSignal<boolean>} */
   public readonly assetsEnabled = input(true);
-  /** @type {InputSignal<string>} */
-  public readonly htmlPath = input('');
   /** @type {OutputEmitterRef<void>} */
   public readonly assetsRequested = output<void>();
   /** @type {OutputEmitterRef<string>} */
   public readonly assetReplaced = output<string>();
-  /** @type {OutputEmitterRef<string>} */
-  public readonly pathChanged = output<string>();
   /** @type {InputSignal<boolean>} */
   public readonly disabled = input(false);
   /** @type {InputSignal<readonly {value: string; label: string}[]>} */
@@ -41,12 +36,16 @@ export class InputList {
   public readonly replaced = output<string>();
   /** @type {OutputEmitterRef<string>} */
   public readonly removed = output<string>();
+  /** @type {OutputEmitterRef<void>} */
+  public readonly archivesRemoved = output<void>();
   /** @type {OutputEmitterRef<{id: string; role: string}>} */
   public readonly assigned = output<{id: string; role: string}>();
   /** @type {OutputEmitterRef<{id: string; index: number}>} */
   public readonly reordered = output<{id: string; index: number}>();
   /** @type {WritableSignal<string | null>} */
   private readonly pendingFocus = signal<string | null>(null);
+  /** @type {WritableSignal<boolean>} */
+  public readonly dragging = signal(false);
 
   /**
    * Restores the moved handle's focus after asynchronous reinspection releases disabled controls.

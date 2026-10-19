@@ -24,10 +24,10 @@ test('bundles nested assets offline and retains all interpretations with an HTML
     const client = new WorkerClient(() => new Worker(new URL(worker, document.baseURI), {type: 'module'}), cleanupJob);
     const inputs = [
       ...files.map(({name, bytes}) => ({id: name, file: new File([new Uint8Array(bytes)], name)})),
-      {id: 'html', file: new File(['<!doctype html><link rel="stylesheet" href="css/main.css"><script src="main.js"></script><h1>Città 日本語 🙂</h1><img src="image.png" srcset="image.png 1x, image.png 2x">'], 'index.html')},
+      {id: 'html', file: new File(['<!doctype html><base href="site/"><link rel="stylesheet" href="css/main.css"><script src="main.js"></script><h1>Città 日本語 🙂</h1><img src="image.png" srcset="image.png 1x, image.png 2x">'], 'index.html')},
       {id: 'assets', file: new File([new Uint8Array(assets)], 'assets.zip'), role: 'html-assets' as const}
     ];
-    const generated = await client.run({operation: 'generate', inputs, options: {htmlPath: 'site/index.html'}});
+    const generated = await client.run({operation: 'generate', inputs});
     if (generated.operation !== 'generate') { throw new Error('generation failed'); }
     try { return Array.from(new Uint8Array(await (await resolveArtifact(generated.artifact)).arrayBuffer())); }
     finally { await cleanupJob(generated.artifact.jobId); }

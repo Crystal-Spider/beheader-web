@@ -60,16 +60,20 @@ test('keeps selected inputs, HTML asset controls and the generated result access
   test.skip(!storage, 'This runner cannot open OPFS; real Safari generation acceptance is tracked separately.');
   await page.getByRole('button', {name: 'Try an example', exact: true}).click();
   await expect(page.getByRole('button', {name: 'Combine files', exact: true})).toBeEnabled();
+  await expect(page.locator('.combine-control .primary-action')).toHaveCSS('opacity', '1');
+  await expect(page.locator('.message-panel')).toHaveCSS('opacity', '1');
   let result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(result.violations).toEqual([]);
   generating = true;
   await page.getByRole('button', {name: 'Combine files', exact: true}).click();
   try {
-    await expect(page.getByRole('progressbar', {name: 'Checking compatibility', exact: true})).toBeVisible();
+    await expect(page.getByRole('progressbar', {name: 'Overall progress', exact: true})).toBeVisible();
+    await expect(page.locator('.combine-control .alternate-action')).toHaveCSS('opacity', '1');
     result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(result.violations).toEqual([]);
   } finally { release(); }
   await expect(page.getByRole('button', {name: 'Download file', exact: true})).toBeEnabled();
+  await expect(page.locator('.combine-control .alternate-action')).toHaveCSS('opacity', '0');
   result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(result.violations).toEqual([]);
   await page.screenshot({path: testInfo.outputPath('result.png'), fullPage: true});

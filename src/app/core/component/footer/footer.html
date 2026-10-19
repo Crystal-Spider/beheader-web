@@ -1,5 +1,5 @@
 <ng-container *transloco="let t">
-  <footer class="app-footer">
+  <footer class="app-footer" [class.wrapped]="wrapped()">
     <div class="credit">
       <p>{{ t('footer.inspired') }} <a href="https://github.com/p2r3/beheader" rel="noopener noreferrer" target="_blank">Beheader</a>.</p>
       <p>{{ t('footer.independent') }}</p>

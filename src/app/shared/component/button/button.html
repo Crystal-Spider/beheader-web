@@ -1,4 +1,8 @@
-@if (appearance() === 'outlined') {
+@if (href()) {
+  <a rel="noopener noreferrer" target="_blank" [disabled]="disabled()" [href]="href()" [matButton]="appearance() === 'outlined' ? 'outlined' : 'filled'">
+    <span class="button-content">@if (icon(); as name) { <bhw-icon [name]="name" /> }{{ label() }}</span>
+  </a>
+} @else if (appearance() === 'outlined') {
   <button mat-stroked-button type="button" [disabled]="disabled()" (click)="clicked.emit()">
     <span class="button-content">@if (icon(); as name) {
       <bhw-icon [name]="name" />
@@ -6,10 +10,14 @@
     {{ label() }}</span>
   </button>
 } @else {
-  <button mat-flat-button type="button" [disabled]="disabled()" (click)="clicked.emit()">
-    <span class="button-content">@if (icon(); as name) {
-      <bhw-icon [name]="name" />
+  <button mat-flat-button type="button" [attr.aria-label]="alternateLabel() ? alternateShown() ? alternateLabel() : label() : null" [disabled]="disabled()" (click)="clicked.emit()">
+    @if (alternateLabel(); as alternate) {
+      <span aria-hidden="true" class="action-stack" [class.alternate-shown]="alternateShown()">
+        <span class="button-content primary-action">@if (icon(); as name) { <bhw-icon [name]="name" /> }{{ label() }}</span>
+        <span class="button-content alternate-action">@if (alternateIcon(); as name) { <bhw-icon [name]="name" /> }{{ alternate }}</span>
+      </span>
+    } @else {
+      <span class="button-content">@if (icon(); as name) { <bhw-icon [name]="name" /> }{{ label() }}</span>
     }
-    {{ label() }}</span>
   </button>
 }

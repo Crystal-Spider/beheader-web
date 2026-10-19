@@ -153,6 +153,6 @@ for (const mode of ['cancel-during-output', 'image-decode-failure'] as const) {
       const retry = await client.run({operation: 'inspect', inputs});
       return {outcome, removed, retry: retry.operation, busy: client.busy};
     }, {workerFile, imageBytes: fixture('transparent.png'), mediaBytes: fixture('video-aac.mp4'), mode});
-    expect(result).toEqual({outcome: {code: mode === 'cancel-during-output' ? 'CANCELLED' : 'IMAGE_INVALID', severity: 'error'}, removed: true, retry: 'inspect', busy: false});
+    expect(result).toEqual({outcome: {code: mode === 'cancel-during-output' ? 'CANCELLED' : 'IMAGE_INVALID', severity: mode === 'cancel-during-output' ? 'info' : 'error'}, removed: true, retry: 'inspect', busy: false});
   });
 }

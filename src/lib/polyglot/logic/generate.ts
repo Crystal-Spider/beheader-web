@@ -5,14 +5,14 @@
 import {ArtifactReference, ProcessingContext, SeekableInput} from '../model/contract';
 import {BlobInput} from '../io/blob-input';
 import {BinaryReader, invalid, relocate, uint32, uint64} from '../io/binary';
-import {TOTAL_INPUT_LIMIT} from '../io/bytes';
+import {CHUNK_BYTES, TOTAL_INPUT_LIMIT} from '../io/bytes';
 import {TemporaryStorage} from '../io/temporary-storage';
 import {HTML_PREFIX, HTML_SUFFIX} from '../format/html';
 import {inspectImage, normalizeImage} from '../format/image';
 import {appendArchives} from '../format/archive';
 import {normalizeAudio} from '../format/audio';
 import {inspectMp4} from '../format/mp4';
-import {checkCancelled, ProcessingError} from './diagnostic';
+import {blocksGeneration, checkCancelled, ProcessingError} from './diagnostic';
 import {PreparedComposition} from './compose';
 
 /** Canonical brands avoid arbitrary input ftyp bytes interfering with the HTML comment. */
@@ -60,7 +60,7 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   const {plan, image, html, pdf, archives = []} = prepared;
   const extensions = !!pdf || archives.length > 0;
   if (!plan.ready) {
-    throw new ProcessingError(plan.diagnostics.find(diagnostic => diagnostic.severity === 'error') ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
+    throw new ProcessingError(plan.diagnostics.find(blocksGeneration) ?? {code: 'IMPLEMENTATION_UNAVAILABLE', severity: 'error'});
   }
   let media = prepared.media && 'info' in prepared.media ? prepared.media : undefined;
   let audioArtifact: ArtifactReference | undefined;
@@ -70,9 +70,10 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
     media = {source: normalized.source, info: await inspectMp4(normalized.source.reader, context)};
   }
   const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
+  context.progress({stage: 'generate', completed: 0, total: 0, unit: 'bytes', ...(image ? {detail: 'image-normalize' as const} : {})});
   const png = image ? new BlobInput(await normalizeImage(image.input.blob, image.info, context)) : undefined;
   const normalized = png ? await inspectImage(png, context) : undefined;
-  const htmlLength = html ? HTML_PREFIX.length + html.source.reader.size - html.bom + HTML_SUFFIX.length : 0;
+  const htmlLength = html ? HTML_PREFIX.length + (html.bundle?.size ?? html.source.reader.size - html.bom) + HTML_SUFFIX.length : 0;
   const skipSize = 8 + htmlLength + (png?.size ?? 0);
   const pngOffset = 256 + (media ? FTYP.length + 8 : 0) + htmlLength;
   const prefixSize = pngOffset + (png?.size ?? 0);
@@ -126,7 +127,10 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   if (media) { await append(FTYP); await append(box(skipSize)); }
   if (html) {
     await append(HTML_PREFIX);
-    await copy(html.source.reader, html.bom, html.source.reader.size - html.bom);
+    if (html.bundle) {
+      const base = completed;
+      await html.bundle.write(writer, {...context, progress: event => { completed = base + event.completed; progress(); }});
+    } else { await copy(html.source.reader, html.bom, html.source.reader.size - html.bom); }
     await append(HTML_SUFFIX);
   }
   if (png) { await copy(png, 0, png.size); }
@@ -136,11 +140,21 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
     await append(terminator);
     await copy(pdf.source.reader, 0, pdf.info.startxref);
     await append(pdfEnd);
-    for (const entry of pdf.info.entries) {
-      const shifted = entry.offset + pdfOffset;
-      if (!Number.isSafeInteger(shifted) || shifted > 9999999999) { invalid('OFFSET_OVERFLOW'); }
-      await writer.patch(entry.field + pdfOffset, encode(String(shifted).padStart(10, '0')), context.signal);
-      completed += 10;
+    const reader = new BinaryReader(pdf.source.reader, context.signal);
+    for (let first = 0; first < pdf.info.entries.length;) {
+      const start = pdf.info.entries[first]!.field;
+      let end = first + 1;
+      while (end < pdf.info.entries.length && pdf.info.entries[end]!.field + 10 - start <= CHUNK_BYTES) { end++; }
+      const bytes = await reader.read(start, pdf.info.entries[end - 1]!.field + 10 - start);
+      for (let index = first; index < end; index++) {
+        const entry = pdf.info.entries[index]!;
+        const shifted = entry.offset + pdfOffset;
+        if (!Number.isSafeInteger(shifted) || shifted > 9999999999) { invalid('OFFSET_OVERFLOW'); }
+        bytes.set(encode(String(shifted).padStart(10, '0')), entry.field - start);
+      }
+      await writer.patch(start + pdfOffset, bytes, context.signal);
+      completed += (end - first) * 10;
+      first = end;
       progress();
     }
   }
@@ -177,5 +191,6 @@ export async function generateResult(prepared: PreparedComposition, storage: Tem
   if (audioArtifact) { await storage.discard(audioArtifact); }
   if (archives.length) { await appendArchives(archives, writer, storage, context, pdfComment); }
   if (media && extensions) { await writer.patch(baseSize, box(writer.size - baseSize), context.signal); }
+  context.progress({stage: 'cleanup', completed: 0, total: 0, unit: 'bytes', detail: 'finalize'});
   return writer.finish(storage.jobId, id, 'application/octet-stream', context.signal);
 }

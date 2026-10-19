@@ -1,6 +1,7 @@
 import {FormatCandidate, InputDescription, InputRole, InputSource, Inspection, ProcessingContext} from '../model/contract';
 import {INPUT_COUNT_LIMIT, INPUT_LIMIT, matches, TOTAL_INPUT_LIMIT} from '../io/bytes';
-import {checkCancelled} from './diagnostic';
+import {checkCancelled, diagnose} from './diagnostic';
+import {inspectHeaders} from './inspect-headers';
 
 /** Supported role names; auxiliary roles always require explicit assignment. */
 export const INPUT_ROLES: readonly InputRole[] = ['image', 'media', 'html', 'pdf', 'archive', 'html-assets'];
@@ -12,7 +13,7 @@ export const INPUT_ROLES: readonly InputRole[] = ['image', 'media', 'html', 'pdf
  */
 export function validateSources(sources: readonly InputSource[]): Inspection['diagnostics'] {
   const diagnostics: Inspection['diagnostics'][number][] = [];
-  if (sources.length > INPUT_COUNT_LIMIT) { return [{code: 'FORMAT_RESOURCE_LIMIT', severity: 'error', details: {limit: INPUT_COUNT_LIMIT}}]; }
+  if (sources.length > INPUT_COUNT_LIMIT) { return [{code: 'FORMAT_RESOURCE_LIMIT', severity: 'error', details: {reason: 'SELECTED_INPUTS', actual: sources.length, limit: INPUT_COUNT_LIMIT}}]; }
   const ids = new Set<string>();
   let total = 0;
   for (const source of sources) {
@@ -26,7 +27,7 @@ export function validateSources(sources: readonly InputSource[]): Inspection['di
     } else {
       total += size;
       if (size > INPUT_LIMIT) {
-        diagnostics.push({code: 'INPUT_TOO_LARGE', severity: 'error', inputId: source.id, details: {limit: INPUT_LIMIT}});
+        diagnostics.push({code: 'INPUT_TOO_LARGE', severity: 'error', inputId: source.id, details: {reason: 'INPUT_BYTES', actual: size, limit: INPUT_LIMIT}});
       }
     }
     if (source.role !== undefined && !INPUT_ROLES.includes(source.role)) {
@@ -34,7 +35,7 @@ export function validateSources(sources: readonly InputSource[]): Inspection['di
     }
   }
   if (!Number.isSafeInteger(total) || total > TOTAL_INPUT_LIMIT) {
-    diagnostics.push({code: 'TOTAL_TOO_LARGE', severity: 'error', details: {limit: TOTAL_INPUT_LIMIT}});
+    diagnostics.push({code: 'TOTAL_TOO_LARGE', severity: 'error', details: {reason: 'TOTAL_BYTES', actual: total, limit: TOTAL_INPUT_LIMIT}});
   }
   return diagnostics;
 }
@@ -69,6 +70,8 @@ export function detectFormats(head: Uint8Array, tail: Uint8Array, source: InputS
   if (head[0] === 255 && head[1] !== undefined && (head[1] & 0xf6) === 0xf0) { add('media', 'aac'); }
   if (ascii(0, 'RIFF') && ascii(8, 'WAVE')) { add('media', 'wav'); }
   if (ascii(0, 'OggS')) { add('media', 'ogg'); }
+  if (matches(head, 0, [26, 69, 223, 163])) { add('media', 'matroska'); }
+  if (ascii(0, 'RIFF') && ascii(8, 'AVI ')) { add('media', 'avi'); }
   const text = new TextDecoder().decode(head);
   if (text.slice(0, 1024).includes('%PDF-')) { add('pdf', 'pdf'); }
   if (/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(text)) { add('image', 'svg'); }
@@ -101,7 +104,7 @@ export async function inspectInputs(sources: readonly InputSource[], context: Pr
   const diagnostics = [...validateSources(sources)];
   const inputs: InputDescription[] = [];
   if (diagnostics.length) { return {inputs, diagnostics}; }
-  context.progress({stage: 'inspect', completed: 0, total: sources.length, unit: 'inputs'});
+  context.progress({stage: 'inspect', completed: 0, total: sources.length, unit: 'inputs', detail: 'input-types'});
   for (const source of sources) {
     checkCancelled(context.signal);
     const head = await source.reader.read(0, Math.min(65536, source.reader.size), context.signal);
@@ -117,9 +120,13 @@ export async function inspectInputs(sources: readonly InputSource[], context: Pr
     if (candidates.length && candidates.every(candidate => candidate.evidence === 'hint')) { diagnostics.push({code: 'INPUT_HINT_ONLY', severity: 'warning', inputId: source.id}); }
     if (source.role && source.role !== 'html-assets'
       && (!families.includes(source.role) || families.length > 1)) {
-      diagnostics.push({code: 'ROLE_REASSIGNED', severity: 'warning', inputId: source.id});
+      diagnostics.push({code: 'ROLE_REASSIGNED', severity: 'info', inputId: source.id, details: {role: source.role, detected: families.length > 1 ? 'ambiguous' : families[0] ?? 'unknown'}});
     }
     inputs.push({id: source.id, name: source.name, size: source.reader.size, candidates, role});
+    if (source.reader.size && !diagnostics.some(item => item.inputId === source.id && item.severity === 'error')) {
+      try { await inspectHeaders(source, role, candidates, head, tail, context); }
+      catch(error) { checkCancelled(context.signal); diagnostics.push({...diagnose(error), inputId: source.id}); }
+    }
     context.progress({stage: 'inspect', completed: inputs.length, total: sources.length, unit: 'inputs'});
   }
   checkCancelled(context.signal);

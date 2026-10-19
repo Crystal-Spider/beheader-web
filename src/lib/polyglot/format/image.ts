@@ -3,8 +3,8 @@ import {BinaryReader, fourCC, invalid, uint32} from '../io/binary';
 import {CHUNK_BYTES, matches} from '../io/bytes';
 import {checkCancelled, ProcessingError} from '../logic/diagnostic';
 
-/** Bounds decoded pixels independently of compressed input size (128 MiB of RGBA). */
-export const IMAGE_PIXEL_LIMIT = 32 * 1024 * 1024;
+/** Bounds decoded pixels independently of compressed input size (256 MiB per RGBA buffer). */
+export const IMAGE_PIXEL_LIMIT = 64 * 1024 * 1024;
 
 /** Static raster dimensions checked before invoking a browser decoder. */
 export interface ImageInfo {
@@ -18,9 +18,10 @@ export interface ImageInfo {
  * @param {number} width Image width.
  * @param {number} height Image height.
  */
-function dimensions(width: number, height: number): void {
+export function dimensions(width: number, height: number): void {
   if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0) { invalid('IMAGE_INVALID'); }
-  if (width > 32767 || height > 32767 || width * height > IMAGE_PIXEL_LIMIT) { invalid('IMAGE_RESOURCE_LIMIT'); }
+  if (width > 32767 || height > 32767) { invalid('IMAGE_RESOURCE_LIMIT', {reason: 'IMAGE_DIMENSIONS', width, height, limit: 32767}); }
+  if (width * height > IMAGE_PIXEL_LIMIT) { invalid('IMAGE_RESOURCE_LIMIT', {reason: 'IMAGE_PIXELS', width, height, actual: width * height, limit: IMAGE_PIXEL_LIMIT}); }
 }
 
 /**
@@ -35,7 +36,7 @@ async function png(reader: BinaryReader): Promise<ImageInfo> {
   let data = false;
   let chunks = 0;
   while (position < reader.input.size) {
-    if (++chunks > 100000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (++chunks > 100000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'png', actual: chunks, limit: 100000}); }
     const header = await reader.read(position, 8);
     const size = uint32(header);
     const type = fourCC(header, 4);
@@ -89,7 +90,7 @@ async function jpeg(reader: BinaryReader): Promise<ImageInfo> {
   let scans = 0;
   let segments = 0;
   while (position < reader.input.size) {
-    if (++segments > 100000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (++segments > 100000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'jpeg', actual: segments, limit: 100000}); }
     const marker = await reader.read(position, 2);
     if (marker[0] !== 255) { invalid('IMAGE_INVALID'); }
     const type = marker[1];
@@ -131,7 +132,7 @@ async function gif(reader: BinaryReader): Promise<ImageInfo> {
   let frames = 0;
   let blocks = 0;
   while (position < reader.input.size) {
-    if (++blocks > 1000000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (++blocks > 1000000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'gif', actual: blocks, limit: 1000000}); }
     const type = (await reader.read(position++, 1))[0];
     if (type === 0x3b) {
       if (frames !== 1 || position !== reader.input.size) { invalid('IMAGE_INVALID'); }
@@ -153,7 +154,7 @@ async function gif(reader: BinaryReader): Promise<ImageInfo> {
       if (label === 1) { invalid('IMAGE_UNSUPPORTED'); }
     } else { invalid('IMAGE_INVALID'); }
     for (;;) {
-      if (++blocks > 1000000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+      if (++blocks > 1000000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'gif', actual: blocks, limit: 1000000}); }
       const length = (await reader.read(position++, 1))[0]!;
       if (!length) { break; }
       position += length;
@@ -178,7 +179,7 @@ async function webp(reader: BinaryReader): Promise<ImageInfo> {
   let frames = 0;
   let count = 0;
   while (position < reader.input.size) {
-    if (++count > 100000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (++count > 100000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'webp', actual: count, limit: 100000}); }
     const chunk = await reader.read(position, 8);
     const type = fourCC(chunk);
     const size = new DataView(chunk.buffer).getUint32(4, true);

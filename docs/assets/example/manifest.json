@@ -23,6 +23,11 @@
     {
       "path": "en/archive-b.zip",
       "name": "archive-b.zip"
+    },
+    {
+      "path": "en/assets.zip",
+      "name": "assets.zip",
+      "role": "html-assets"
     }
   ],
   "it": [
@@ -49,6 +54,11 @@
     {
       "path": "it/archivio-b.zip",
       "name": "archivio-b.zip"
+    },
+    {
+      "path": "it/risorse.zip",
+      "name": "risorse.zip",
+      "role": "html-assets"
     }
   ]
 }

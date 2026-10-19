@@ -11,6 +11,7 @@ interface ActiveJob {
   readonly reject: (error: ProcessingError) => void;
   readonly progress: (progress: JobProgress) => void;
   finishing: Promise<void> | null;
+  stage: JobProgress['stage'];
 }
 
 /** Owns one short-lived dedicated worker, including forced cancellation and crash cleanup. */
@@ -34,11 +35,11 @@ export class WorkerClient {
    * @returns {Promise<OperationResult>} Terminal result, or a safe ProcessingError.
    */
   public run(request: OperationRequest, progress: (progress: JobProgress) => void = () => {}): Promise<OperationResult> {
-    if (this.active) { return Promise.reject(new ProcessingError({code: 'JOB_BUSY', severity: 'error'})); }
+    if (this.active) { return Promise.reject(new ProcessingError({code: 'JOB_BUSY', severity: 'info'})); }
     return new Promise((resolve, reject) => {
       let worker: Worker;
       try { worker = this.createWorker(); } catch { reject(new ProcessingError({code: 'WORKER_FAILED', severity: 'error'})); return; }
-      const job: ActiveJob = {id: crypto.randomUUID(), request, worker, resolve, reject, progress, finishing: null};
+      const job: ActiveJob = {id: crypto.randomUUID(), request, worker, resolve, reject, progress, finishing: null, stage: 'inspect'};
       this.active = job;
       worker.onmessage = (event: MessageEvent<unknown>): void => {
         const message = event.data;
@@ -46,9 +47,10 @@ export class WorkerClient {
         if (isRecord(message) && typeof message['jobId'] === 'string' && message['jobId'] !== job.id) { return; }
         if (!isWorkerResponse(message)) { void this.finish(job, new ProcessingError({code: 'WORKER_PROTOCOL', severity: 'error'})); return; }
         if (message.type === 'progress') {
+          job.stage = message.progress.stage;
           try { job.progress(message.progress); } catch { void this.finish(job, new ProcessingError({code: 'WORKER_FAILED', severity: 'error'})); }
         } else if (message.type === 'failed') {
-          void this.finish(job, new ProcessingError(message.diagnostic));
+          void this.finish(job, new ProcessingError(message.diagnostic, message.plan));
         } else if (message.result.operation !== request.operation) {
           void this.finish(job, new ProcessingError({code: 'WORKER_PROTOCOL', severity: 'error'}));
         } else {
@@ -57,7 +59,7 @@ export class WorkerClient {
       };
       worker.onerror = (event): void => {
         event.preventDefault();
-        void this.finish(job, new ProcessingError({code: 'WORKER_FAILED', severity: 'error'}));
+        void this.finish(job, new ProcessingError({code: 'WORKER_FAILED', severity: 'error', details: {stage: job.stage}}));
       };
       worker.onmessageerror = (): void => { void this.finish(job, new ProcessingError({code: 'WORKER_PROTOCOL', severity: 'error'})); };
       try { worker.postMessage({type: 'run', jobId: job.id, request}); }
@@ -71,7 +73,7 @@ export class WorkerClient {
     if (!job) { return; }
     if (job.finishing) { await job.finishing; return; }
     // Termination guarantees cancellation even if a decoder or read does not yield.
-    await this.finish(job, new ProcessingError({code: 'CANCELLED', severity: 'error'}));
+    await this.finish(job, new ProcessingError({code: 'CANCELLED', severity: 'info'}));
   }
 
   /**
@@ -91,7 +93,8 @@ export class WorkerClient {
       let terminal = outcome;
       // Runtime reports unavailable storage only before allocation or after successful disposal.
       // Retrying through the same unavailable API would mask that actionable failure as cleanup failure.
-      if (outcome instanceof ProcessingError && job.request.operation === 'generate' && outcome.diagnostic.code !== 'STORAGE_UNAVAILABLE') {
+      // A failed plan also precedes allocation; retain every diagnostic without opening storage.
+      if (outcome instanceof ProcessingError && !outcome.plan && job.request.operation === 'generate' && outcome.diagnostic.code !== 'STORAGE_UNAVAILABLE') {
         try { await this.cleanup(job.id); }
         catch(error) { terminal = new ProcessingError(diagnose(error, 'CLEANUP_FAILED')); }
       }

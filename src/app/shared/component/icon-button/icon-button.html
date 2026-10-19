@@ -1,4 +1,4 @@
-<button mat-icon-button type="button" [attr.aria-controls]="controls() || null" [attr.aria-describedby]="description() || null" [attr.aria-expanded]="expanded()" [attr.aria-label]="label()" [disabled]="disabled()" [matTooltip]="label()" [matTooltipDisabled]="disabled()" [matTooltipShowDelay]="250" (click)="clicked.emit()">
+<button mat-icon-button type="button" [attr.aria-controls]="controls() || null" [attr.aria-describedby]="description() || null" [attr.aria-expanded]="expanded()" [attr.aria-label]="label()" [disabled]="disabled()" [matTooltip]="label()" [matTooltipDisabled]="disabled() || !tooltip() || !touchTooltip() && touch()" [matTooltipShowDelay]="250" [matTooltipTouchGestures]="touchTooltip() ? 'auto' : 'off'" (click)="clicked.emit()" (pointerdown)="pointer($event)">
   @if (alternateIcon(); as alternate) {
     <span class="icon-stack" [class.alternate-shown]="alternateShown()"><bhw-icon class="primary-icon" [name]="icon()" /><bhw-icon class="alternate-icon" [name]="alternate" /></span>
   } @else {

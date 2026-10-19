@@ -19,6 +19,7 @@ export const ICON_FILES = {
   drag: 'drag_indicator',
   sort: 'sort',
   back: 'arrow_back',
+  external: 'open_in_new',
   github: 'github',
   patreon: 'patreon',
   kofi: 'kofi'

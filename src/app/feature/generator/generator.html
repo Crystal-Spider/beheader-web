@@ -6,8 +6,6 @@
       <bhw-title-card />
 
       @if (dragging()) { <div aria-hidden="true" class="drop-overlay">{{ t('ui.drop') }}</div> }
-      @if (processing.storageDiagnostic(); as diagnostic) { <p class="metadata">{{ t('diagnostic.' + diagnostic.code) }}</p> }
-      @if (job().plan?.resources?.large) { <p class="metadata">{{ t('offline.large') }} {{ size(job().plan?.resources?.temporaryBytes || 0) }}</p> }
       <input #picker data-testid="file-picker" hidden tabindex="-1" type="file" [attr.accept]="pickerAccept || accepted()" [attr.aria-label]="t('generator.choose')" [multiple]="true" (change)="picked(picker)">
 
       <hr class="section-divider">
@@ -15,13 +13,15 @@
         <div class="section-heading">
           <h2 id="files-title">{{ t('generator.filesTitle') }}</h2>
         </div>
-        <div class="file-placeholder">
-          <bhw-icon class="upload-icon" name="upload" />
-          <div>
-            <h3>{{ t('generator.emptyTitle') }}</h3>
-            <p>{{ t('ui.drop') }}</p>
+        <div #filePlaceholder class="file-placeholder" [class.stacked]="pickerStacked()">
+          <div class="file-invitation">
+            <bhw-icon class="upload-icon" name="upload" />
+            <div class="file-copy">
+              <h3>{{ t('generator.emptyTitle') }}</h3>
+              <p>{{ t('ui.drop') }}</p>
+            </div>
           </div>
-          <bhw-button appearance="outlined" [disabled]="job().busy || !accepted()" [label]="t('generator.choose')" (clicked)="choose(picker)" />
+          <bhw-button appearance="outlined" [block]="pickerStacked()" [disabled]="job().busy || !accepted()" [label]="t('generator.choose')" (clicked)="choose(picker)" />
         </div>
 
         <ul class="format-list" [attr.aria-label]="t('generator.formatsLabel')">
@@ -36,35 +36,13 @@
         </ul>
 
         <bhw-button appearance="outlined" class="example-button" icon="example" [block]="true" [disabled]="job().busy" [label]="t('ui.example')" (clicked)="example()" />
-        <bhw-input-list [assets]="assets()" [assetsEnabled]="assetsEnabled()" [disabled]="job().busy" [htmlPath]="session.options.htmlPath || ''" [inputs]="cards()" [roles]="roles()" (assetReplaced)="choose(picker, 'html-assets', $event)" (assetsRequested)="choose(picker, 'html-assets')" (assigned)="session.assign($event.id, $event.role)" (pathChanged)="path($event)" (removed)="session.remove($event)" (reordered)="reorder($event)" (replaced)="choose(picker, undefined, $event)" />
-        @if (job().plan?.references?.length) {
-          <div class="reference-panel">
-            <p>{{ t('ui.references') }}</p>
-            <ul>@for (reference of job().plan?.references; track $index) { <li><code>{{ reference.reference }}</code> · {{ reference.from }} · {{ t('reference.' + reference.reason) }}</li> }</ul>
-            <mat-checkbox [checked]="!!session.options.allowUnresolved" [disabled]="job().busy" (change)="allow($event.checked)">{{ t('ui.allowReferences') }}</mat-checkbox>
-          </div>
-        }
-        @if (job().plan?.collisions?.length) {
-          <p>{{ t('ui.collisions') }}</p>
-          <ul class="archive-collisions">@for (collision of job().plan?.collisions; track $index) { <li><code>{{ collision.path }}</code></li> }</ul>
-        }
-        <div aria-live="polite" class="diagnostics">
-          @for (diagnostic of job().diagnostics; track $index) {
-            <p [class.error]="diagnostic.severity === 'error'"><code>{{ diagnostic.code }}</code> · {{ t('diagnostic.' + diagnostic.code) }}</p>
-          }
-          @if (job().diagnostics.length) { <bhw-button appearance="outlined" [label]="t('ui.logs')" (clicked)="logs()" /> }
-          @if (unexpected()) { <a rel="noopener noreferrer" target="_blank" [href]="issue()">{{ t('ui.issue') }}</a> }
-        </div>
+        <bhw-input-list [assets]="assets()" [assetsEnabled]="assetsEnabled()" [disabled]="job().busy" [inputs]="cards()" [roles]="roles()" (archivesRemoved)="session.removeArchives()" (assetReplaced)="choose(picker, 'html-assets', $event)" (assetsRequested)="choose(picker, 'html-assets')" (assigned)="session.assign($event.id, $event.role)" (removed)="session.remove($event)" (reordered)="reorder($event)" (replaced)="choose(picker, undefined, $event)" />
+        <bhw-messages [state]="messageState()" (allowed)="allow($event)" (logs)="logs()" />
         <div class="combine-area">
-          @if (job().busy) {
-            <div aria-live="polite" role="status">
-              <p>{{ t('stage.' + (job().progress?.stage || 'plan')) }}</p>
-              <mat-progress-bar [attr.aria-label]="t('stage.' + (job().progress?.stage || 'plan'))" [mode]="job().progress?.total ? 'determinate' : 'indeterminate'" [value]="100 * (job().progress?.completed || 0) / (job().progress?.total || 1)" />
-              <p>{{ progressLabel() }}</p>
-            </div>
-            <bhw-button appearance="outlined" [label]="t('ui.cancel')" (clicked)="cancel()" />
-          }
-          <bhw-button icon="magic" [block]="true" [disabled]="job().busy || !job().plan?.ready" [label]="t('generator.combine')" (clicked)="generate()" />
+          <bhw-job-progress [busy]="job().busy" [failed]="job().failed" [operation]="job().operation" [percentage]="job().percentage" [progress]="job().progress" [revision]="job().revision" />
+          <div class="combine-control" role="group" [attr.aria-disabled]="!canCancel() && (job().busy || !canCombine())" [attr.aria-label]="canCancel() ? t('ui.cancel') : t('generator.combine')" [attr.tabindex]="!canCancel() && (job().busy || !canCombine()) ? 0 : null" [matTooltip]="canCancel() ? '' : combineReason()" [matTooltipShowDelay]="250">
+            <bhw-button alternateIcon="close" icon="magic" [alternateLabel]="t('ui.cancel')" [alternateShown]="canCancel()" [block]="true" [disabled]="!canCancel() && (job().busy || !canCombine())" [label]="t('generator.combine')" (clicked)="canCancel() ? cancel() : generate()" />
+          </div>
         </div>
       </section>
 

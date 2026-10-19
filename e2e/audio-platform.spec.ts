@@ -1,5 +1,32 @@
 import {expect, test} from '@playwright/test';
-import {mkdirSync, writeFileSync} from 'node:fs';
+import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {buildSync} from 'esbuild';
+
+const mp3Harness = buildSync({entryPoints: ['e2e/mp3-harness.ts'], bundle: true, write: false, format: 'iife', globalName: 'bhwMp3', platform: 'browser'}).outputFiles[0]!.text;
+
+for (const [name, channels, sampleRate] of [['audio.mp3', 1, 48000], ['audio-stereo.mp3', 2, 48000], ['audio-low-rate.mp3', 1, 22050]] as const) {
+  test(`decodes ${name} inside a worker without native audio APIs or OPFS`, async({page}) => {
+    await page.goto('./');
+    const result = await page.evaluate(async({harness, bytes}) => {
+      const source = `Object.defineProperty(globalThis, 'AudioDecoder', {value: undefined}); Object.defineProperty(globalThis, 'AudioData', {value: undefined}); ${harness}\n self.onmessage=async event=>{try{self.postMessage({result:await bhwMp3.decodeMp3(new Uint8Array(event.data))});}catch(error){self.postMessage({error:String(error)});}};`;
+      const url = URL.createObjectURL(new Blob([source], {type: 'text/javascript'}));
+      const worker = new Worker(url);
+      try {
+        return await new Promise<{result?: {channels: number; sampleRate: number; frames: number; continuous: boolean; rms: number[]}; error?: string}>((resolve, reject) => {
+          worker.onmessage = (event: MessageEvent<{result?: {channels: number; sampleRate: number; frames: number; continuous: boolean; rms: number[]}; error?: string}>) => { resolve(event.data); };
+          worker.onerror = () => { reject(new Error('Decoder worker failed')); };
+          worker.postMessage(bytes);
+        });
+      } finally { worker.terminate(); URL.revokeObjectURL(url); }
+    }, {harness: mp3Harness, bytes: Array.from(readFileSync(`e2e/fixture/${name}`))});
+    expect(result.error).toBeUndefined();
+    expect(result.result).toMatchObject({channels, sampleRate, continuous: true});
+    expect(result.result!.frames / sampleRate).toBeGreaterThan(1.9);
+    expect(result.result!.frames / sampleRate).toBeLessThan(2.15);
+    expect(result.result!.rms.every(value => value > 0.02 && value < 0.2)).toBe(true);
+    if (channels === 2) { expect(result.result!.rms[0]! / result.result!.rms[1]!).toBeCloseTo(2, 1); }
+  });
+}
 
 test('records worker codec and temporary-storage capabilities', async({page, browserName, browser}) => {
   await page.goto('./');

@@ -51,7 +51,7 @@ def probe(path):
     return json.loads(result.stdout)
 
 
-outputs = sorted(results.glob("*.polyglot"))
+outputs = sorted(results.glob("*-video-*.polyglot"))
 assert len(outputs) == 7, f"Run the complete Playwright suite first; found {len(outputs)} outputs"
 report = {"pillow": pillow_version, "outputs": []}
 for path in outputs:

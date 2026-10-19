@@ -1,4 +1,4 @@
-import {FileInput, WorkerRequest, WorkerResponse} from '../model/contract';
+import {FileInput, PROGRESS_DETAILS, WorkerRequest, WorkerResponse} from '../model/contract';
 import {INPUT_ROLES} from '../logic/inspect';
 import {validateStorageId} from '../io/temporary-storage';
 
@@ -25,7 +25,7 @@ export function isWorkerRequest(value: unknown): value is WorkerRequest {
   const inputs: unknown = request['inputs'];
   const options = request['options'];
   if (options !== undefined && (!isRecord(options)
-    || options['htmlPath'] !== undefined && (typeof options['htmlPath'] !== 'string' || options['htmlPath'].length > 1024)
+    || Object.keys(options).some(key => key !== 'allowUnresolved')
     || options['allowUnresolved'] !== undefined && typeof options['allowUnresolved'] !== 'boolean')) { return false; }
   return Array.isArray(inputs) && inputs.every((input: unknown): input is FileInput => isRecord(input)
     && typeof input['id'] === 'string' && input['id'].length > 0 && input['id'].length <= 128
@@ -46,11 +46,15 @@ export function isWorkerResponse(value: unknown): value is WorkerResponse {
     return isRecord(progress) && ['inspect', 'plan', 'convert', 'generate', 'extract', 'pack', 'cleanup'].includes(String(progress['stage']))
       && ['bytes', 'inputs', 'microseconds'].includes(String(progress['unit']))
       && typeof progress['completed'] === 'number' && Number.isSafeInteger(progress['completed']) && progress['completed'] >= 0
+      && (progress['estimated'] === undefined || typeof progress['estimated'] === 'boolean')
+      && (progress['detail'] === undefined || PROGRESS_DETAILS.some(detail => detail === progress['detail']))
       && typeof progress['total'] === 'number' && Number.isSafeInteger(progress['total']) && progress['total'] >= progress['completed'];
   }
   if (value['type'] === 'failed') {
     const diagnostic = value['diagnostic'];
-    return isRecord(diagnostic) && typeof diagnostic['code'] === 'string' && diagnostic['severity'] === 'error';
+    return isRecord(diagnostic) && typeof diagnostic['code'] === 'string' && typeof diagnostic['severity'] === 'string'
+      && ['info', 'warning', 'error'].includes(diagnostic['severity'])
+      && (value['plan'] === undefined || isPlan(value['plan']));
   }
   const result = value['result'];
   if (value['type'] !== 'complete' || !isRecord(result)) { return false; }
@@ -61,5 +65,15 @@ export function isWorkerResponse(value: unknown): value is WorkerResponse {
     || artifact['jobId'] !== value['jobId'] || typeof artifact['id'] !== 'string' || typeof artifact['mediaType'] !== 'string'
     || typeof artifact['size'] !== 'number' || !Number.isSafeInteger(artifact['size']) || artifact['size'] < 0) { return false; }
   try { validateStorageId(artifact['id']); } catch { return false; }
-  return true;
+  return result['plan'] === undefined || isPlan(result['plan']);
+}
+
+/**
+ * @param {unknown} value Optional complete validation feedback.
+ * @returns {boolean} Whether the bundled worker supplied plan metadata with safe basic collections.
+ */
+function isPlan(value: unknown): boolean {
+  return isRecord(value) && Array.isArray(value['inputs']) && Array.isArray(value['diagnostics'])
+    && value['diagnostics'].every(item => isRecord(item) && typeof item['code'] === 'string' && ['info', 'warning', 'error'].includes(String(item['severity'])))
+    && Array.isArray(value['families']) && Array.isArray(value['interpretations']) && typeof value['ready'] === 'boolean';
 }

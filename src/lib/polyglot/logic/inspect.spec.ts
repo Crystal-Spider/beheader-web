@@ -13,6 +13,14 @@ const source = (id: string, name: string, contents: BlobPart[], role?: InputSour
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 
 describe('inspection and role planning', () => {
+  it('accepts 16 records and rejects 17 before any content read', async() => {
+    const read = vi.fn(() => Promise.resolve(png));
+    const sources: InputSource[] = Array.from({length: 17}, (_, index) => ({id: String(index), name: `${index}.png`, mediaType: 'image/png', reader: {size: png.length, read}}));
+    expect((await inspectInputs(sources, context())).diagnostics).toContainEqual({code: 'FORMAT_RESOURCE_LIMIT', severity: 'error', details: {reason: 'SELECTED_INPUTS', actual: 17, limit: 16}});
+    expect(read).not.toHaveBeenCalled();
+    expect((await inspectInputs(sources.slice(0, 16), context())).inputs).toHaveLength(16);
+    expect(read).toHaveBeenCalledTimes(16);
+  });
   it('checks all input and aggregate sizes before the first read', async() => {
     const read = vi.fn();
     const large = (id: string, size: number): InputSource => ({id, name: '', mediaType: '', reader: {size, read}});
@@ -31,10 +39,10 @@ describe('inspection and role planning', () => {
       expect(length).toBeLessThanOrEqual(CHUNK_BYTES);
       expect(validRange(offset, length, INPUT_LIMIT)).toBe(true);
       const bytes = new Uint8Array(length);
-      if (!offset) { bytes.set(new TextEncoder().encode('%PDF-1.4\n')); }
+      if (!offset) { bytes.set([80, 75, 3, 4]); }
       return Promise.resolve(bytes);
     });
-    const sources: InputSource[] = ['a', 'b'].map(id => ({id, name: 'large.pdf', mediaType: '', role: 'pdf', reader: {size: INPUT_LIMIT, read}}));
+    const sources: InputSource[] = ['a', 'b'].map(id => ({id, name: 'large.zip', mediaType: '', role: 'archive', reader: {size: INPUT_LIMIT, read}}));
     const result = await inspectInputs(sources, context());
     expect(result.diagnostics).toEqual([]);
     expect(result.inputs.reduce((total, input) => total + input.size, 0)).toBe(TOTAL_INPUT_LIMIT);
@@ -91,7 +99,7 @@ describe('inspection and role planning', () => {
     ], context());
     const plan = planComposition(result, context());
     expect(plan.families).toEqual(['image', 'archive']);
-    expect(plan.diagnostics.filter(item => item.code === 'ROLE_CONFLICT')).toEqual([{code: 'ROLE_CONFLICT', severity: 'error', details: {role: 'image'}}]);
+    expect(plan.diagnostics.filter(item => item.code === 'ROLE_CONFLICT')).toEqual([{code: 'ROLE_CONFLICT', severity: 'error', details: {role: 'image', actual: 2, limit: 1}}]);
     expect(plan.inputs.map(input => input.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 

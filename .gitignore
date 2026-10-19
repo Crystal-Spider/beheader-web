@@ -4,6 +4,7 @@
 /coverage/
 /test-results/
 /playwright-report/
+/local-validation/
 *.tsbuildinfo
 *.log
 .DS_Store

@@ -21,6 +21,12 @@ button:not(:disabled):hover {
 button:focus-visible {
   outline-color: var(--bhw-icon-button-focus-color, #{$accent});
 }
+:host(.drag-handle) button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
 bhw-icon {
   width: 1.5rem;
   height: 1.5rem;

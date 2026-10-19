@@ -26,8 +26,23 @@ h2 {
   border-radius: 1rem;
   background: $surface;
 }
-.file-placeholder > div {
+.file-invitation {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   flex: 1;
+  min-width: 0;
+}
+.file-copy {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.file-placeholder.stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+.file-placeholder > bhw-button, .upload-icon {
+  flex-shrink: 0;
 }
 .file-placeholder h3 {
   margin: 0;
@@ -74,10 +89,11 @@ h2 {
 .combine-area {
   margin-block: 1rem 0;
 }
-.combine-area p {
-  margin: 0 0 1rem;
-  color: $muted;
-  font-size: 0.8rem;
+.combine-control[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.combine-control[aria-disabled='true'] bhw-button {
+  pointer-events: none;
 }
 .output-section {
   padding: 1.5rem;
@@ -118,27 +134,8 @@ h2 {
   color: $muted;
   font-size: 0.8rem;
 }
-.reference-panel {
-  padding: 1rem;
-  border: 1px solid $border;
-  border-radius: 1rem;
-  background: $surface;
-}
-.reference-panel li, .diagnostics p, .result-panel li {
+.result-panel li {
   overflow-wrap: anywhere;
-}
-.diagnostics {
-  margin-block: 1rem;
-}
-.diagnostics:empty {
-  margin-block: 0;
-}
-.diagnostics .error {
-  color: #ffb4c1;
-}
-.diagnostics a {
-  display: inline-block;
-  padding: 1rem;
 }
 .output-controls {
   display: grid;
@@ -169,14 +166,7 @@ h2 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .file-placeholder {
-    flex-wrap: wrap;
     padding: 1.25rem;
-  }
-  .file-placeholder > div {
-    flex-basis: calc(100% - 3.5rem);
-  }
-  .file-placeholder bhw-button {
-    width: 100%;
   }
 }
 @media (max-width: 35rem) {

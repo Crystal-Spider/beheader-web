@@ -27,7 +27,7 @@ export async function inspectAudioStructure(input: SeekableInput, context: Proce
     let block = 0;
     let dataSize = -1;
     while (offset < input.size) {
-      if (++chunks > 10000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+      if (++chunks > 10000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'wav', actual: chunks, limit: 10000}); }
       const chunk = await reader.read(offset, 8);
       const size = view(chunk).getUint32(4, true);
       const name = fourCC(chunk);
@@ -36,7 +36,7 @@ export async function inspectAudioStructure(input: SeekableInput, context: Proce
         if (dataSize >= 0) { invalid('AUDIO_TRACKS'); }
         dataSize = size;
       } else {
-        if (size > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+        if (size > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_METADATA_BYTES', actual: size, limit: CHUNK_BYTES}); }
         if (name === 'fmt ') {
           if (block || size < 16) { invalid('AUDIO_INVALID'); }
           block = view(await reader.read(offset + 8, 16)).getUint16(12, true);
@@ -52,7 +52,7 @@ export async function inspectAudioStructure(input: SeekableInput, context: Proce
     let packetSize = 0;
     let ended = false;
     while (offset < input.size) {
-      if (sequence >= 1000000) { invalid('FORMAT_RESOURCE_LIMIT'); }
+      if (sequence >= 1000000) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'ogg', actual: sequence, limit: 1000000}); }
       const prefix = await reader.read(offset, 27);
       const header = view(prefix);
       if (fourCC(prefix) !== 'OggS' || prefix[4] !== 0 || ended || (prefix[5]! & ~7)) { invalid('AUDIO_INVALID'); }
@@ -67,7 +67,7 @@ export async function inspectAudioStructure(input: SeekableInput, context: Proce
       for (const length of lacing) {
         payloadSize += length;
         packetSize += length;
-        if (packetSize > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+        if (packetSize > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_METADATA_BYTES', actual: packetSize, limit: CHUNK_BYTES}); }
         if (length < 255) { packetSize = 0; }
       }
       const checksum = header.getUint32(22, true);
@@ -85,7 +85,7 @@ export async function inspectAudioStructure(input: SeekableInput, context: Proce
   } else if (String.fromCharCode(...head.subarray(0, 3)) === 'ID3') {
     if (head.length < 10 || head.subarray(6, 10).some(byte => byte & 128)) { invalid('AUDIO_INVALID'); }
     const size = head.subarray(6, 10).reduce((size, byte) => size * 128 + byte, 0);
-    if (size > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (size > CHUNK_BYTES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_METADATA_BYTES', actual: size, limit: CHUNK_BYTES}); }
     if (size + 10 > input.size) { invalid('AUDIO_INVALID'); }
   }
 }

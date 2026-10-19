@@ -1,13 +1,19 @@
 import {Diagnostic} from '~bhw/polyglot/model/contract';
+import {detailReason, diagnosticParameters} from '~bhw/polyglot/model/diagnostic-detail';
 import {version} from '../../../../../package.json';
 
 /**
- * Allowlisted diagnostic export intentionally excludes names, paths, URLs, details, and file bytes.
+ * Exports fixed codes, allowlisted reasons and measured context; excludes names, paths and file bytes.
  * @param {readonly Diagnostic[]} diagnostics Safe core outcomes.
+ * @param {(diagnostic: Diagnostic) => string} explain Optional catalog lookup, receiving only sanitized details.
  * @returns {string} Small human-readable downloadable report.
  */
-export function diagnosticReport(diagnostics: readonly Diagnostic[]): string {
-  return JSON.stringify({application: 'beheader-web', version, browser: navigator.userAgent, diagnostics: diagnostics.slice(0, 30).map(({code, severity}) => ({code, severity}))}, null, 2);
+export function diagnosticReport(diagnostics: readonly Diagnostic[], explain?: (diagnostic: Diagnostic) => string): string {
+  return JSON.stringify({application: 'beheader-web', version, browser: navigator.userAgent, diagnostics: diagnostics.slice(0, 30).map(item => {
+    const reason = detailReason(item); const context = diagnosticParameters(item);
+    const safe = {code: item.code, severity: item.severity, details: {...context, ...(reason ? {reason} : {})}};
+    return {code: item.code, severity: item.severity, ...(reason ? {reason} : {}), ...(Object.keys(context).length ? {context} : {}), ...(explain ? {message: explain(safe)} : {})};
+  })}, null, 2);
 }
 
 /**
@@ -16,7 +22,7 @@ export function diagnosticReport(diagnostics: readonly Diagnostic[]): string {
  * @returns {string} User-initiated GitHub issue URL.
  */
 export function issueUrl(diagnostics: readonly Diagnostic[]): string {
-  const codes = [...new Set(diagnostics.map(item => item.code))].slice(0, 8).join(', ');
+  const codes = [...new Set(diagnostics.map(item => `${item.code}${detailReason(item) ? ` (${detailReason(item)})` : ''}`))].slice(0, 8).join(', ');
   return `https://github.com/Crystal-Spider/beheader-web/issues/new?${new URLSearchParams({title: 'Generation issue', body: `Beheader Web ${version}\nDiagnostic codes: ${codes}\n\nWhat happened?\n\nPlease review and attach the downloaded diagnostics if useful. Do not attach private input files.`})}`;
 }
 

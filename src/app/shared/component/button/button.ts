@@ -27,11 +27,21 @@ export class Button {
    */
   public readonly disabled = input(false);
 
+  /** @type {InputSignal<string | null>} Optional external destination, retaining native link semantics. */
+  public readonly href = input<string | null>(null);
+
   /**
    * Optional decorative icon.
    * @type {InputSignal<IconName | null>}
    */
   public readonly icon = input<IconName | null>(null);
+
+  /** @type {InputSignal<string | null>} Optional action crossfaded within the same native button. */
+  public readonly alternateLabel = input<string | null>(null);
+  /** @type {InputSignal<IconName | null>} */
+  public readonly alternateIcon = input<IconName | null>(null);
+  /** @type {InputSignal<boolean>} */
+  public readonly alternateShown = input(false);
 
   /**
    * Material button appearance.

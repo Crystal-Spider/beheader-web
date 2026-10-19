@@ -6,7 +6,7 @@ export const INPUT_LIMIT = 1024 ** 3;
 export const TOTAL_INPUT_LIMIT = 2 * INPUT_LIMIT;
 
 /** Bounds selection metadata and per-input structural work, independently of byte limits. */
-export const INPUT_COUNT_LIMIT = 128;
+export const INPUT_COUNT_LIMIT = 16;
 
 /**
  * Prevents unsafe offset arithmetic, negative lengths, and reads past EOF.

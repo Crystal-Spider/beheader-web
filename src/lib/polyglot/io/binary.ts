@@ -1,13 +1,14 @@
-import {DiagnosticCode, SeekableInput} from '../model/contract';
+import {Diagnostic, DiagnosticCode, SeekableInput} from '../model/contract';
 import {checkCancelled, ProcessingError} from '../logic/diagnostic';
 import {CHUNK_BYTES, validRange} from './bytes';
 
 /**
  * Throws a typed format diagnostic at an invalid structure or capability boundary.
  * @param {DiagnosticCode} code Stable failure code.
+ * @param {Diagnostic['details']} details Safe structural reason and measured metadata.
  * @returns {never} Always throws.
  */
-export function invalid(code: DiagnosticCode): never { throw new ProcessingError({code, severity: 'error'}); }
+export function invalid(code: DiagnosticCode, details?: Diagnostic['details']): never { throw new ProcessingError({code, severity: 'error', ...(details ? {details} : {})}); }
 
 /**
  * Decodes a four-byte box/chunk name without changing arbitrary binary byte values.

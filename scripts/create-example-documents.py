@@ -44,11 +44,23 @@ for language, copy in CONTENT.items():
     destination = ROOT / language
     destination.mkdir(parents=True, exist_ok=True)
     page = copy["html"]
+    assets = page["assets"]
     html = (f'<!doctype html><html lang="{language}"><head><meta charset="utf-8">'
-            f'<title>{escape(page["title"])}</title></head><body><h1>{escape(page["heading"])}</h1>'
-            f'<p>{escape(page["greeting"])}</p></body></html>\n')
+            f'<title>{escape(page["title"])}</title><link rel="stylesheet" href="{assets["styles"]}">'
+            f'</head><body><h1>{escape(page["heading"])}</h1><p>{escape(page["greeting"])}</p>'
+            f'<img src="{assets["image"]}" alt="{escape(assets["alt"])}" width="128" height="128"></body></html>\n')
     (destination / page["name"]).write_text(html, encoding="utf-8")
     (destination / copy["pdf"]["name"]).write_bytes(pdf(copy["pdf"]))
+    with ZipFile(destination / assets["name"], "w") as output:
+        for name, data in {
+            assets["styles"]: b'body{font-family:system-ui,sans-serif;background:#15131c;color:#eee8ff;margin:2rem}img{display:block;margin-top:1rem}\n',
+            assets["image"]: (ROOT / "picture.png").read_bytes()
+        }.items():
+            entry = ZipInfo(name, (2026, 1, 1, 0, 0, 0))
+            entry.compress_type = ZIP_DEFLATED
+            entry.create_system = 3
+            entry.external_attr = 0o100644 << 16
+            output.writestr(entry, data)
     for archive in copy["archives"]:
         with ZipFile(destination / archive["name"], "w") as output:
             for name, text in archive["entries"].items():
@@ -63,7 +75,8 @@ for language, copy in CONTENT.items():
         {"path": f'{language}/{page["name"]}', "name": page["name"]},
         {"path": "tone.mp3", "name": copy["audio"]},
         {"path": f'{language}/{copy["pdf"]["name"]}', "name": copy["pdf"]["name"]},
-        *({"path": f'{language}/{archive["name"]}', "name": archive["name"]} for archive in copy["archives"])
+        *({"path": f'{language}/{archive["name"]}', "name": archive["name"]} for archive in copy["archives"]),
+        {"path": f'{language}/{assets["name"]}', "name": assets["name"], "role": "html-assets"}
     ]
 
 (ROOT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

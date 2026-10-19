@@ -23,10 +23,11 @@ for (const name of readdirSync(root).filter(name => /^(?:main-|chunk-|worker-[A-
 const examples = JSON.parse(readFileSync(resolve(root, 'assets/example/manifest.json'), 'utf8'));
 assert.ok(Object.hasOwn(manifest.hashTable, `${prefix}assets/example/manifest.json`));
 for (const language of ['en', 'it']) {
-  assert.equal(examples[language].length, 6);
+  assert.equal(examples[language].length, 7);
+  assert.equal(examples[language].filter(asset => asset.role === 'html-assets').length, 1);
   for (const asset of examples[language]) { assert.ok(Object.hasOwn(manifest.hashTable, `${prefix}assets/example/${asset.path}`)); }
 }
-for (const name of ['GPL-3.0.txt', 'BEHEADER-NOTICES.txt', 'AUDIO-NOTICES.txt', 'MPL-2.0.txt', 'LGPL-2.1.txt', 'GOLT-MIT.txt', 'SIMPLE-ICONS-CC0.txt']) {
+for (const name of ['GPL-3.0.txt', 'BEHEADER-NOTICES.txt', 'AUDIO-NOTICES.txt', 'MP3-NOTICES.txt', 'MPL-2.0.txt', 'LGPL-2.1.txt', 'GOLT-MIT.txt', 'SIMPLE-ICONS-CC0.txt']) {
   assert.ok(Object.hasOwn(manifest.hashTable, `${prefix}assets/license/${name}`), `Missing offline license: ${name}`);
 }
 assert.ok(readFileSync(resolve(root, '3rdpartylicenses.txt')).length > 0);

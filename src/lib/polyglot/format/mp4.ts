@@ -1,5 +1,25 @@
 import {ProcessingContext, SeekableInput} from '../model/contract';
 import {BinaryReader, fourCC, invalid, uint32, uint64} from '../io/binary';
+import {MP4_BRANDS} from './mp4-probe';
+import {ProcessingError} from '../logic/diagnostic';
+import {DetailReason} from '../model/diagnostic-detail';
+
+/**
+ * Preserves the failed metadata section when an inspector cannot provide a finer reason.
+ * @template T
+ * @param {() => Promise<T>} work One structural check.
+ * @param {DetailReason} reason Safe section name.
+ * @returns {Promise<T>} Check result.
+ */
+async function inspectSection<T>(work: () => Promise<T>, reason: DetailReason): Promise<T> {
+  try { return await work(); }
+  catch(error) {
+    if (error instanceof ProcessingError && ['MP4_INVALID', 'MP4_STRUCTURE', 'MP4_CODEC'].includes(error.diagnostic.code) && !error.diagnostic.details?.['reason']) {
+      throw new ProcessingError({...error.diagnostic, details: {reason}});
+    }
+    throw error;
+  }
+}
 
 /** Absolute box positions are retained so original bytes can be copied and patched. */
 export interface Mp4Box {
@@ -47,7 +67,7 @@ export async function readBoxes(reader: BinaryReader, start: number, end: number
     const size = short === 1 ? uint64(bytes, 8) : short === 0 ? end - start : short;
     if (size < header || size > end - start || (short === 0 && type !== 'mdat')) { invalid('MP4_INVALID'); }
     boxes.push({type, start, size, header});
-    if (boxes.length > MAX_BOXES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (boxes.length > MAX_BOXES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_BOXES', actual: boxes.length, limit: MAX_BOXES}); }
     start += size;
   }
   return boxes;
@@ -74,7 +94,7 @@ function allow(boxes: readonly Mp4Box[], allowed: readonly string[]): void {
   for (const box of boxes) {
     if (['moof', 'mvex', 'mfra', 'sidx', 'ssix', 'tfra'].includes(box.type)) { invalid('MP4_FRAGMENTED'); }
     if (['pssh', 'senc', 'saiz', 'saio', 'sinf', 'encv', 'enca'].includes(box.type)) { invalid('MP4_ENCRYPTED'); }
-    if (!allowed.includes(box.type)) { invalid('MP4_STRUCTURE'); }
+    if (!allowed.includes(box.type)) { invalid('MP4_STRUCTURE', {reason: 'MEDIA_BOX', feature: 'metadata'}); }
   }
 }
 
@@ -187,7 +207,7 @@ class NumberTable {
  * @param {number} width Bytes per entry.
  */
 function tableSize(box: Mp4Box, prefix: number, count: number, width: number): void {
-  if (count > MAX_ENTRIES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+  if (count > MAX_ENTRIES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'mp4', actual: count, limit: MAX_ENTRIES}); }
   if (box.size !== box.header + prefix + count * width) { invalid('MP4_INVALID'); }
 }
 
@@ -221,7 +241,7 @@ function descriptor(bytes: Uint8Array, start: number, end: number): {tag: number
  * @returns {Promise<void>} Completion of codec validation.
  */
 async function inspectAac(reader: BinaryReader, box: Mp4Box): Promise<void> {
-  if (box.size > 65536) { invalid('FORMAT_RESOURCE_LIMIT'); }
+  if (box.size > 65536) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_METADATA_BYTES', actual: box.size, limit: 65536}); }
   const bytes = await full(reader, box, box.size - box.header);
   if (uint32(bytes) !== 0) { invalid('MP4_CODEC'); }
   const es = descriptor(bytes, 4, bytes.length);
@@ -260,7 +280,10 @@ async function inspectDescription(reader: BinaryReader, stsd: Mp4Box, handler: s
   if (entries.length !== 1 || !entries[0]) { invalid('MP4_INVALID'); }
   const entry = entries[0];
   if (['encv', 'enca'].includes(entry.type)) { invalid('MP4_ENCRYPTED'); }
-  if (entry.type !== (handler === 'vide' ? 'avc1' : 'mp4a')) { invalid('MP4_CODEC'); }
+  if (entry.type !== (handler === 'vide' ? 'avc1' : 'mp4a')) {
+    const codecs: Readonly<Record<string, string>> = {hvc1: 'h265', hev1: 'h265', av01: 'av1', vp09: 'vp9', vp08: 'vp8', Opus: 'opus'};
+    invalid('MP4_CODEC', {reason: 'MEDIA_CODEC', codec: codecs[entry.type] ?? 'unknown'});
+  }
   const fixed = handler === 'vide' ? 78 : 28;
   if (entry.size < entry.header + fixed) { invalid('MP4_INVALID'); }
   const data = await reader.read(entry.start + entry.header, fixed);
@@ -270,7 +293,7 @@ async function inspectDescription(reader: BinaryReader, stsd: Mp4Box, handler: s
   allow(children, handler === 'vide' ? ['avcC', 'pasp', 'btrt', 'colr', 'clap', 'fiel'] : ['esds', 'btrt']);
   if (handler === 'soun') { await inspectAac(reader, single(children, 'esds')); return; }
   const avcc = single(children, 'avcC');
-  if (avcc.size > 65536) { invalid('FORMAT_RESOURCE_LIMIT'); }
+  if (avcc.size > 65536) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'MEDIA_METADATA_BYTES', actual: avcc.size, limit: 65536}); }
   const config = await reader.read(avcc.start + avcc.header, avcc.size - avcc.header);
   if (config.length < 7 || config[0] !== 1 || (config[4]! & 0xfc) !== 0xfc || (config[5]! & 0xe0) !== 0xe0
     || (config[4]! & 3) === 2 || !(config[5]! & 31)) { invalid('MP4_CODEC'); }
@@ -313,7 +336,7 @@ async function inspectSamples(reader: BinaryReader, boxes: readonly Mp4Box[], md
   if (uint32(sizes)) { invalid('MP4_INVALID'); }
   const constant = uint32(sizes, 4);
   const samples = uint32(sizes, 8);
-  if (!samples || samples > MAX_ENTRIES) { invalid('FORMAT_RESOURCE_LIMIT'); }
+  if (!samples || samples > MAX_ENTRIES) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'FORMAT_RECORDS', format: 'mp4', actual: samples, limit: MAX_ENTRIES}); }
   tableSize(stsz, 12, constant ? 0 : samples, 4);
   const sampleSizes = new NumberTable(reader, stsz.start + stsz.header + 12, samples);
   const stsc = single(boxes, 'stsc');
@@ -394,7 +417,7 @@ async function inspectReferences(reader: BinaryReader, dinf: Mp4Box): Promise<vo
   if (uint32(prefix) || uint32(prefix, 4) !== 1) { invalid('MP4_STRUCTURE'); }
   const urls = await readBoxes(reader, dref.start + dref.header + 8, dref.start + dref.size);
   const url = single(urls, 'url ');
-  if (urls.length !== 1 || url.size !== url.header + 4 || uint32(await full(reader, url, 4)) !== 1) { invalid('MP4_STRUCTURE'); }
+  if (urls.length !== 1 || url.size !== url.header + 4 || uint32(await full(reader, url, 4)) !== 1) { invalid('MP4_STRUCTURE', {reason: 'MEDIA_EXTERNAL'}); }
 }
 
 /**
@@ -410,34 +433,34 @@ export async function inspectMp4(input: SeekableInput, context: ProcessingContex
   const ftyp = single(top, 'ftyp');
   if (ftyp.start !== 0 || ftyp.size < ftyp.header + 8 || (ftyp.size - ftyp.header) % 4) { invalid('MP4_STRUCTURE'); }
   const brand = fourCC(await reader.read(ftyp.start + ftyp.header, 4));
-  if (!['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'M4V ', 'M4A '].includes(brand)) { invalid('MP4_STRUCTURE'); }
+  if (!MP4_BRANDS.includes(brand)) { invalid('MP4_STRUCTURE', {reason: 'MEDIA_BRAND'}); }
   const mdats = top.filter(box => box.type === 'mdat');
   if (!mdats.length) { invalid('MP4_INVALID'); }
   const moov = single(top, 'moov');
   const movie = await readBoxes(reader, moov.start + moov.header, moov.start + moov.size);
   allow(movie, ['mvhd', 'trak', 'udta', 'meta']);
-  await inspectHeader(reader, single(movie, 'mvhd'));
+  await inspectSection(() => inspectHeader(reader, single(movie, 'mvhd')), 'MEDIA_TIMING');
   for (const box of movie.filter(box => box.type === 'udta' || box.type === 'meta')) { await inspectMetadata(reader, box); }
   const tracks = movie.filter(box => box.type === 'trak');
-  if (!tracks.length || tracks.length > 2) { invalid('MP4_TRACKS'); }
+  if (!tracks.length || tracks.length > 2) { invalid('MP4_TRACKS', {reason: 'VIDEO_TRACKS', tracks: tracks.length}); }
   const tables: ChunkTable[] = [];
   const handlers: string[] = [];
   for (const track of tracks) {
     const children = await readBoxes(reader, track.start + track.header, track.start + track.size);
     allow(children, ['tkhd', 'edts', 'mdia', 'udta']);
-    await inspectHeader(reader, single(children, 'tkhd'));
+    await inspectSection(() => inspectHeader(reader, single(children, 'tkhd')), 'MEDIA_TIMING');
     for (const box of children.filter(box => box.type === 'udta')) { await inspectMetadata(reader, box); }
     const edits = children.filter(box => box.type === 'edts');
     if (edits.length > 1) { invalid('MP4_INVALID'); }
-    if (edits[0]) { await inspectEdits(reader, edits[0]); }
+    if (edits[0]) { const edit = edits[0]; await inspectSection(() => inspectEdits(reader, edit), 'MEDIA_TIMING'); }
     const mdia = single(children, 'mdia');
     const media = await readBoxes(reader, mdia.start + mdia.header, mdia.start + mdia.size);
     allow(media, ['mdhd', 'hdlr', 'minf']);
-    await inspectHeader(reader, single(media, 'mdhd'));
+    await inspectSection(() => inspectHeader(reader, single(media, 'mdhd')), 'MEDIA_TIMING');
     const hdlr = await full(reader, single(media, 'hdlr'), 24);
     if (uint32(hdlr)) { invalid('MP4_INVALID'); }
     const handler = fourCC(hdlr, 8);
-    if (!['vide', 'soun'].includes(handler) || handlers.includes(handler)) { invalid('MP4_TRACKS'); }
+    if (!['vide', 'soun'].includes(handler) || handlers.includes(handler)) { invalid('MP4_TRACKS', {reason: 'VIDEO_TRACKS', tracks: tracks.length}); }
     handlers.push(handler);
     const minf = single(media, 'minf');
     const info = await readBoxes(reader, minf.start + minf.header, minf.start + minf.size);
@@ -449,8 +472,8 @@ export async function inspectMp4(input: SeekableInput, context: ProcessingContex
     const stbl = single(info, 'stbl');
     const samples = await readBoxes(reader, stbl.start + stbl.header, stbl.start + stbl.size);
     allow(samples, ['stsd', 'stts', 'ctts', 'stsc', 'stsz', 'stco', 'co64', 'stss', 'sdtp', 'sgpd', 'sbgp', 'free']);
-    await inspectDescription(reader, single(samples, 'stsd'), handler);
-    tables.push(await inspectSamples(reader, samples, mdats));
+    await inspectSection(() => inspectDescription(reader, single(samples, 'stsd'), handler), 'MEDIA_CODEC');
+    tables.push(await inspectSection(() => inspectSamples(reader, samples, mdats), 'MEDIA_SAMPLES'));
   }
   return {ftyp, mdats, tables, audio: handlers.includes('soun'), video: handlers.includes('vide')};
 }

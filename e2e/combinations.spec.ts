@@ -166,7 +166,7 @@ for (const stage of ['extract', 'pack'] as const) {
       const retry = await client.run({operation: 'plan', inputs});
       return {outcome, removed, retry: retry.operation === 'plan' && retry.plan.ready};
     }, {workerFile, bytes, stage});
-    expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'error'}, removed: true, retry: true});
+    expect(result).toEqual({outcome: {code: 'CANCELLED', severity: 'info'}, removed: true, retry: true});
   });
 }
 
@@ -200,6 +200,6 @@ for (const phase of ['expansion', 'repacking'] as const) {
       const root = await storageRoot();
       return {outcome, removed: await root.getDirectoryHandle(jobId).then(() => false, () => true)};
     }, {bytes: Array.from(readFileSync('e2e/fixture/first.zip')), phase});
-    expect(result).toEqual({outcome: {code: 'STORAGE_FULL', severity: 'error'}, removed: true});
+    expect(result).toEqual({outcome: {code: 'STORAGE_FULL', severity: 'warning'}, removed: true});
   });
 }

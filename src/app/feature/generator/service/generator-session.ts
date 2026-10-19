@@ -10,7 +10,7 @@ import {ProcessingError} from '~bhw/polyglot/logic/diagnostic';
 import {selectionActions, selectionFeature} from '../redux/selection';
 
 /** Local asset location and the filename shown in the selected language. */
-interface ExampleAsset {readonly path: string; readonly name: string}
+interface ExampleAsset {readonly path: string; readonly name: string; readonly role?: InputRole}
 
 /** Owns selected Files and output lifetimes outside NgRx; nothing here restores selected files. */
 @Injectable({providedIn: 'root'})
@@ -45,7 +45,7 @@ export class GeneratorSession {
   public add(files: readonly File[], role?: InputRole, replacing?: string): void {
     if (this.busy() || !files.length) { return; }
     const additions = files.map(file => ({id: crypto.randomUUID(), file, ...(role ? {role} : {})}));
-    if (replacing) { this.inputs = this.inputs.flatMap(input => input.id === replacing ? additions.slice(0, 1) : [input]); }
+    if (replacing) { this.inputs = this.inputs.filter(input => replacing !== this.htmlId || input.role !== 'html-assets').flatMap(input => input.id === replacing ? additions.slice(0, 1) : [input]); }
     else { this.inputs = [...this.inputs, ...additions]; }
     this.options = {...this.options, allowUnresolved: false}; this.refresh();
   }
@@ -54,6 +54,14 @@ export class GeneratorSession {
    * @param {string} id Input to remove.
    */
   public remove(id: string): void { if (!this.busy()) { this.inputs = this.inputs.filter(input => input.id !== id && (id !== this.htmlId || input.role !== 'html-assets')); this.options = {...this.options, allowUnresolved: false}; this.refresh(); } }
+
+  /** Removes independently selected archives together; nested HTML asset ZIPs stay attached. */
+  public removeArchives(): void {
+    if (this.busy()) { return; }
+    const ids = new Set(this.selection().filter(input => input.role === 'archive').map(input => input.id));
+    this.inputs = this.inputs.filter(input => !ids.has(input.id));
+    this.options = {...this.options, allowUnresolved: false}; this.refresh();
+  }
 
   /**
    * @param {string} id Input receiving a role decision.
@@ -111,22 +119,19 @@ export class GeneratorSession {
       const metadata = inspected.inspection.inputs.length ? inspected.inspection.inputs : inputs.map(input => ({id: input.id, name: input.file.name, size: input.file.size, candidates: [], role: input.role ?? null}));
       this.store.dispatch(selectionActions.changed({inputs: metadata}));
       const htmlId = metadata.find(input => input.role === 'html')?.id;
-      if (htmlId !== this.htmlId) { this.options = {...this.options, htmlPath: undefined, allowUnresolved: false}; this.htmlId = htmlId; }
-      if (!inputs.length) { return null; }
-      if (inspected.inspection.diagnostics.some(item => item.severity === 'error')) {
-        return {operation: 'plan', plan: {...inspected.inspection, inputs: metadata, families: [], interpretations: [], ready: false}};
-      }
+      if (htmlId !== this.htmlId) { this.options = {...this.options, allowUnresolved: false}; this.htmlId = htmlId; }
+      return {operation: 'inspect', inspection: {...inspected.inspection, inputs: metadata}};
     }
-    const result = await this.processing.run({operation: operation === 'refresh' ? 'plan' : 'generate', inputs, options: this.options});
+    const result = await this.processing.run({operation: 'generate', inputs, options: this.options});
     if (result.operation === 'generate') { this.artifact = result.artifact; }
     return result;
   }
 
-  /** @returns {Promise<void>} Cancellation across both workers and between-operation cleanup. */
+  /** @returns {Promise<void>} Cancellation across the worker and between-operation cleanup. */
   public cancel(): Promise<void> { this.cancelled = true; return this.processing.cancel(); }
 
   /** Rejects cancellation between asynchronous cleanup/inspection and the next worker operation. */
-  private requireActive(): void { if (this.cancelled) { throw new ProcessingError({code: 'CANCELLED', severity: 'error'}); } }
+  private requireActive(): void { if (this.cancelled) { throw new ProcessingError({code: 'CANCELLED', severity: 'info'}); } }
 
   /**
    * Loads only redistributable local example assets; file selection itself remains ephemeral.
@@ -145,9 +150,9 @@ export class GeneratorSession {
       const response = await fetch(new URL(`assets/example/${asset.path}`, document.baseURI));
       if (!response.ok) { throw new Error('IO_FAILURE'); }
       const blob = await response.blob();
-      return new File([blob], asset.name, {type: blob.type});
+      return {id: crypto.randomUUID(), file: new File([blob], asset.name, {type: blob.type}), ...(asset.role ? {role: asset.role} : {})};
     }));
     if (this.inputs !== previous || this.busy() || this.languages.language() !== language) { return; }
-    this.inputs = []; this.add(files);
+    this.inputs = files; this.options = {...this.options, allowUnresolved: false}; this.refresh();
   }
 }

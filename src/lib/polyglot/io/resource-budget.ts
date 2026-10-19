@@ -26,7 +26,7 @@ export class ResourceBudget {
     const previous = this.sizes.get(id) ?? 0;
     const size = Math.max(previous, end);
     const total = this.total + size - previous;
-    if (!Number.isSafeInteger(total) || total > this.limit) { invalid('FORMAT_RESOURCE_LIMIT'); }
+    if (!Number.isSafeInteger(total) || total > this.limit) { invalid('FORMAT_RESOURCE_LIMIT', {reason: 'WORKSPACE_BYTES', actual: total, limit: this.limit}); }
     this.sizes.set(id, size); this.total = total;
   }
 

@@ -20,41 +20,50 @@ async function waitForOfflineCache(page: Page): Promise<void> {
 
 test.use({serviceWorkers: 'allow', locale: 'en-GB'});
 
-test('closes and reopens offline, switches language, converts audio and downloads without network responses', async({page, context}) => {
-  test.setTimeout(60000);
-  await page.goto('./');
-  await waitForOfflineCache(page);
-  await expect(page.getByTestId('offline-ready')).toHaveCount(0);
-  await page.close();
-  await context.setOffline(true);
-  const reopened = await context.newPage();
-  const responses: {url: string; cached: boolean}[] = [];
-  const failures: string[] = [];
-  reopened.on('response', response => { if (response.url().startsWith('http:')) { responses.push({url: response.url(), cached: response.fromServiceWorker()}); } });
-  reopened.on('requestfailed', request => failures.push(request.url()));
-  await reopened.goto('./');
-  await expect(reopened.locator('.selected-file')).toHaveCount(0);
-  const metadataCached = await reopened.evaluate(async() => {
-    const manifestUrl = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!.href;
-    const manifest = await (await fetch(manifestUrl)).json() as {icons: {src: string}[]};
-    const urls = [manifestUrl, ...manifest.icons.map(icon => new URL(icon.src, manifestUrl).href), ...Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="apple-touch-icon"]'), link => link.href)];
-    return (await Promise.all(urls.map(async url => (await fetch(url)).ok))).every(Boolean);
+for (const fallback of [false, true]) {
+  test(`closes and reopens offline${fallback ? ' without native audio APIs' : ''}, switches language, converts audio and downloads without network responses`, async({page, context}) => {
+    test.setTimeout(60000);
+    // A same-origin fixture keeps Firefox's module workers under service-worker
+    // control; blob worker wrappers do not preserve that offline cache path.
+    const server = fallback ? await startUpdateServer("Object.defineProperty(globalThis, 'AudioDecoder', {value: undefined}); Object.defineProperty(globalThis, 'AudioData', {value: undefined});") : null;
+    const url = server?.url ?? './';
+    try {
+      await page.goto(url);
+      await waitForOfflineCache(page);
+      await expect(page.getByTestId('offline-ready')).toHaveCount(0);
+      await page.close();
+      await context.setOffline(true);
+      const reopened = await context.newPage();
+      const responses: {url: string; cached: boolean}[] = [];
+      const failures: string[] = [];
+      reopened.on('response', response => { if (response.url().startsWith('http:')) { responses.push({url: response.url(), cached: response.fromServiceWorker()}); } });
+      reopened.on('requestfailed', request => failures.push(request.url()));
+      await reopened.goto(url);
+      await expect(reopened.locator('.selected-file')).toHaveCount(0);
+      const metadataCached = await reopened.evaluate(async() => {
+        const manifestUrl = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!.href;
+        const manifest = await (await fetch(manifestUrl)).json() as {icons: {src: string}[]};
+        const urls = [manifestUrl, ...manifest.icons.map(icon => new URL(icon.src, manifestUrl).href), ...Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="apple-touch-icon"]'), link => link.href)];
+        return (await Promise.all(urls.map(async url => (await fetch(url)).ok))).every(Boolean);
+      });
+      expect(metadataCached).toBe(true);
+      await reopened.getByRole('combobox', {name: 'Language', exact: true}).click();
+      await reopened.getByRole('option', {name: 'IT Italiano'}).click();
+      await reopened.getByRole('button', {name: 'Prova un esempio', exact: true}).click();
+      await expect(reopened.getByRole('button', {name: 'Combina file', exact: true})).toBeEnabled();
+      await expect(reopened.locator('.selected-file h3')).toHaveText(['immagine.png', 'pagina.html', 'tono.mp3', 'documento.pdf', 'archivio-a.zip', 'archivio-b.zip']);
+      await reopened.getByRole('button', {name: 'Combina file', exact: true}).click();
+      await expect(reopened.getByRole('button', {name: 'Scarica file', exact: true})).toBeEnabled();
+      const downloaded = reopened.waitForEvent('download');
+      await reopened.getByRole('button', {name: 'Scarica file', exact: true}).click();
+      expect(readFileSync((await (await downloaded).path())).length).toBeGreaterThan(30000);
+      expect(failures).toEqual([]);
+      expect(responses.length).toBeGreaterThan(5);
+      expect(responses.filter(response => !response.cached)).toEqual([]);
+      await reopened.close();
+    } finally { await server?.close(); }
   });
-  expect(metadataCached).toBe(true);
-  await reopened.getByRole('combobox', {name: 'Language', exact: true}).click();
-  await reopened.getByRole('option', {name: 'IT Italiano'}).click();
-  await reopened.getByRole('button', {name: 'Prova un esempio', exact: true}).click();
-  await expect(reopened.getByRole('button', {name: 'Combina file', exact: true})).toBeEnabled();
-  await expect(reopened.locator('.selected-file h3')).toHaveText(['immagine.png', 'pagina.html', 'tono.mp3', 'documento.pdf', 'archivio-a.zip', 'archivio-b.zip']);
-  await reopened.getByRole('button', {name: 'Combina file', exact: true}).click();
-  await expect(reopened.getByRole('button', {name: 'Scarica file', exact: true})).toBeEnabled();
-  const downloaded = reopened.waitForEvent('download');
-  await reopened.getByRole('button', {name: 'Scarica file', exact: true}).click();
-  expect(readFileSync((await (await downloaded).path())).length).toBeGreaterThan(30000);
-  expect(failures).toEqual([]);
-  expect(responses.length).toBeGreaterThan(5);
-  expect(responses.filter(response => !response.cached)).toEqual([]);
-});
+}
 
 test('caches a new deployment automatically on reload and uses it on the next load offline', async({page, context}) => {
   test.setTimeout(60000);

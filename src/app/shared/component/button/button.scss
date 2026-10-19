@@ -6,12 +6,13 @@
   display: flex;
   width: 100%;
 
-  button {
+  button, a {
     width: 100%;
   }
 }
 
-button {
+button, a {
+  width: var(--bhw-button-width, auto);
   min-height: 3rem;
   border-radius: 1rem;
   font-size: 0.875rem;
@@ -29,7 +30,25 @@ bhw-icon {
   gap: 0.5rem;
   line-height: 1.25;
 }
-:host(.small) button {
+.action-stack {
+  display: grid;
+}
+.action-stack .button-content {
+  grid-area: 1 / 1;
+  transition: opacity 280ms ease-in-out;
+}
+.alternate-action, .alternate-shown .primary-action {
+  opacity: 0;
+}
+.alternate-shown .alternate-action {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-stack .button-content {
+    transition: none;
+  }
+}
+:host(.small) button, :host(.small) a {
   min-height: 2.5rem;
   height: 2.5rem;
   padding-inline: 0.75rem;
@@ -42,7 +61,7 @@ bhw-icon {
 :host(.small) .button-content {
   gap: 0.375rem;
 }
-:host(.compact) button {
+:host(.compact) button, :host(.compact) a {
   padding-inline: 0.375rem;
 }
 :host(.compact) .button-content {
